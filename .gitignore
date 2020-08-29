@@ -1,0 +1,6 @@
+dist
+node_modules/
+db/
+temp/
+thumbs.db
+logs/*
