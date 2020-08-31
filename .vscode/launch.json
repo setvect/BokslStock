@@ -8,13 +8,9 @@
       "type": "node",
       "request": "launch",
       "name": "프로그램 시작",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "program": "${workspaceRoot}\\index.ts",
-      "outFiles": [
-        "${workspaceRoot}/dist/*.js"
-      ]
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceRoot}\\backend\\bin\\www",
+      "outFiles": ["${workspaceRoot}/dist/*.js"]
     }
   ]
 }
