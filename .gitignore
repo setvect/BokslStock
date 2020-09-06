@@ -4,4 +4,4 @@ db/
 temp/
 thumbs.db
 logs/*
-backend/public
+backend/src/public

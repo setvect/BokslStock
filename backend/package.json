@@ -4,19 +4,27 @@
   "private": true,
   "scripts": {
     "start": "nodemon ./dist/bin/server.js",
-    "build": "tsc",
+    "build": "npm run clean && npm run build-ts && npm run copy-static-assets",
+    "clean": "del-cli --force ./dist",
+    "build-ts": "tsc",
+    "copy-static-assets": "ts-node copyStaticAssets.ts",
     "build:watch": "tsc --watch"
   },
   "dependencies": {
-    "@types/cookie-parser": "^1.4.2",
-    "@types/express": "^4.17.7",
-    "@types/http-errors": "^1.8.0",
-    "@types/morgan": "^1.9.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
     "morgan": "~1.9.1",
     "pug": "2.0.0-beta11"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.2",
+    "@types/express": "^4.17.7",
+    "@types/http-errors": "^1.8.0",
+    "@types/morgan": "^1.9.1",
+    "@types/shelljs": "^0.8.8",
+    "del-cli": "^3.0.1",
+    "shelljs": "^0.8.4"
   }
 }
