@@ -13,9 +13,7 @@
             예매율
             <span class="num">{{ movie.rate }}</span>
           </span>
-          <router-link :to="{ name: 'show', params: { id: movie.id } }" class="link"
-            >자세히보기</router-link
-          >
+          <router-link :to="{ name: 'show', params: { id: movie.id } }" class="link">자세히보기</router-link>
         </div>
       </li>
     </ul>

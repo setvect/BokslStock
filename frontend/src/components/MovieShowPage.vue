@@ -17,25 +17,23 @@
       <h2>줄거리</h2>
       <p v-html="movie.synopsis" class="synopsis"></p>
     </section>
-    <router-link :to="{ name: 'index', params: { id: movie.id } }" class="link"
-      >돌아가기</router-link
-    >
+    <router-link :to="{ name: 'index', params: { id: movie.id } }" class="link">돌아가기</router-link>
   </div>
 </template>
 <script>
 export default {
   created: function() {
-    const id = this.$route.params.id
-    console.log('id :>> ', id)
-    this.$http.get(`/api/movies/${id}`).then(response => {
-      console.log('response :>> ', response)
-      this.movie = response.data[0]
-    })
+    const id = this.$route.params.id;
+    console.log("id :>> ", id);
+    this.$http.get(`/api/movies/${id}`).then((response) => {
+      console.log("response :>> ", response);
+      this.movie = response.data[0];
+    });
   },
   data: function() {
     return {
-      movie: {}
-    }
-  }
-}
+      movie: {},
+    };
+  },
+};
 </script>
