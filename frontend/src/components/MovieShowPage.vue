@@ -22,7 +22,7 @@
 </template>
 <script>
 export default {
-  created: function() {
+  created: () => {
     const id = this.$route.params.id;
     console.log("id :>> ", id);
     this.$http.get(`/api/movies/${id}`).then((response) => {
@@ -30,7 +30,7 @@ export default {
       this.movie = response.data[0];
     });
   },
-  data: function() {
+  data: () => {
     return {
       movie: {},
     };
