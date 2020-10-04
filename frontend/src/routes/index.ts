@@ -13,7 +13,7 @@ const routes: Array<RouteConfig> = [
     path: "/:id",
     name: "show",
     component: () => import("@/components/MovieShowPage.vue"),
-  },
+  }
 ];
 
 export default new VueRouter({

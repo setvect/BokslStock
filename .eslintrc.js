@@ -5,7 +5,7 @@ module.exports = {
     es6: true,
     node: true,
   },
-  extends: ["eslint:recommended", "plugin:vue/essential"],
+  extends: ["eslint:recommended", "plugin:vue/essential", "plugin:@typescript-eslint/eslint-recommended"],
   globals: {
     __static: true,
     Swal: true,
