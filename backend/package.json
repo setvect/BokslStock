@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./dist/bin/server.js",
+    "start": "ts-node-dev --respawn ./src/bin/server.ts",
     "build": "npm run clean && npm run build-ts && npm run copy-static-assets",
     "clean": "del-cli --force ./dist",
     "build-ts": "tsc",
@@ -26,6 +26,8 @@
     "@types/shelljs": "^0.8.8",
     "del-cli": "^3.0.1",
     "eslint-plugin-vue": "^6.2.2",
-    "shelljs": "^0.8.4"
+    "shelljs": "^0.8.4",
+    "ts-node": "^9.0.0",
+    "ts-node-dev": "^1.0.0-pre.63"
   }
 }
