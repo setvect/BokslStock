@@ -2,7 +2,7 @@ var express = require('express')
 var router = express.Router()
 var movies = require('../movies.json')
 router.get('/', function (req: any, res: any, next: any) {
-  console.log("######################55555555");
+  console.log("######################66666666");
   res.send(movies)
 })
 // 영화 상세 페이지를 위한 코드

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "ts-node-dev --respawn ./src/bin/server.ts",
+    "dev": "nodemon --exec ts-node ./src/bin/server.ts",
     "build": "npm run clean && npm run build-ts && npm run copy-static-assets",
     "clean": "del-cli --force ./dist",
     "build-ts": "tsc",
