@@ -1,14 +1,48 @@
+require("dotenv").config();
+
 import createError from "http-errors";
 import express from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
 
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+
+
 let indexRouter = require("./routes/index");
 let usersRouter = require("./routes/users");
 let moviesRouter = require("./routes/movies");
 
 let app = express();
+app.use(bodyParser.urlencoded({ extended: true, }));
+app.use(bodyParser.json());
+
+// Node.js의 native Promise 사용
+mongoose.Promise = global.Promise;
+
+// CONNECT TO MONGODB SERVER
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, })
+  .then(() => console.log("Successfully connected to mongodb"))
+  .catch((e: any) => console.error(e));
+
+
+// Define Schemes
+const todoSchema = new mongoose.Schema({
+  todoid: { type: Number, required: true, unique: true, },
+  content: { type: String, required: true, },
+  completed: { type: String, default: false, },
+},
+{
+  timestamps: true,
+});
+
+// Create Model & Export
+module.exports = mongoose.model("Todo", todoSchema);
+
+
+
+
 
 // view engine setup
 app.set("public", path.join(__dirname, "public"));
