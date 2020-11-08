@@ -22,18 +22,19 @@
 </template>
 <script>
 export default {
-  created: () => {
+  data() {
+    return {
+      movie: {},
+    };
+  },
+  created() {
+    console.log("this :>> ", this);
     const id = this.$route.params.id;
     console.log("id :>> ", id);
     this.$http.get(`/api/movies/${id}`).then((response) => {
       console.log("response :>> ", response);
       this.movie = response.data[0];
     });
-  },
-  data: () => {
-    return {
-      movie: {},
-    };
   },
 };
 </script>

@@ -3,10 +3,14 @@
 ### 메모
 
 ### 진행예정
-- NEW-20201004: frontend 빌드결과를 backend로 리소스로 활용하여 frontend 데몬 실행없이 backend 실행으로 동작되게 함
+- NEW-20201107: bootstrap 이용해 UI틀 잡기
+- NEW-20201107: 종목기준 투자자별 매매동향 일단위, 주단위, 월단위 리포트
+- NEW-20201107: 종복 코드별 네이버 주식 투자자별 매매동향 크롤링하여 DB에 저장
+- NEW-20201107: mongodb 연동
 
 
 ### 완료
+- NEW-20201004(20201107): frontend 빌드결과를 backend로 리소스로 활용하여 frontend 데몬 실행없이 backend 실행으로 동작되게 함
 - NEW-20201004: eslint typescript 적용
 - NEW-20200906(20201004): 파일 수정하면 자동으로 컴파일 되어 실시간 반영되도록함(backend)
 - NEW-20200906: 프론트 엔드 build 적용하여 backend 가지고 동작되게 함

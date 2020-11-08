@@ -11,7 +11,7 @@ let moviesRouter = require("./routes/movies");
 let app = express();
 
 // view engine setup
-app.set("views", path.join(__dirname, "views"));
+app.set("public", path.join(__dirname, "public"));
 app.set("view engine", "pug");
 
 app.use(logger("dev"));

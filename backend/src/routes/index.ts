@@ -1,9 +1,7 @@
 var express = require("express");
 var router = express.Router();
-console.log("############@@@@@@@@@@@@@@@@@@@");
 /* GET home page. */
-router.get("/", function(req: any, res: any, next: any) {
-  console.log("##############################");
+router.get("/", (req: any, res: any, next: any) => {
   res.render("index", { title: "Express", });
 });
 

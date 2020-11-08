@@ -6,13 +6,22 @@ Vue.use(VueRouter);
 const routes: Array<RouteConfig> = [
   {
     path: "/",
+    redirect: "/movie",
+  },
+  {
+    path: "/movie",
     name: "index",
     component: () => import("@/components/MovieIndexPage.vue"),
   },
   {
-    path: "/:id",
+    path: "/movie/:id",
     name: "show",
     component: () => import("@/components/MovieShowPage.vue"),
+  },
+  {
+    path: "/mongoCrud",
+    name: "mongoCrud",
+    component: () => import("@/components/mongo/mongoCrud.vue"),
   }
 ];
 
