@@ -10,6 +10,7 @@
 
 
 ### 완료
+- NEW-20201114: vscode로 백엔드 디버깅 할 수 있게 셋팅
 - NEW-20201004(20201107): frontend 빌드결과를 backend로 리소스로 활용하여 frontend 데몬 실행없이 backend 실행으로 동작되게 함
 - NEW-20201004: eslint typescript 적용
 - NEW-20200906(20201004): 파일 수정하면 자동으로 컴파일 되어 실시간 반영되도록함(backend)
