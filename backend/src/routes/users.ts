@@ -1,9 +1,10 @@
-var express = require("express");
-var router = express.Router();
+import * as express from "express";
+const router = express.Router();
 
 /* GET users listing. */
-router.get("/", function(req: any, res: any, next: any) {
-  res.send("respond with a resource");
+router.get("/", (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.log("req", req);
+  res.send(`${req.url} 호출`);
 });
 
 module.exports = router;

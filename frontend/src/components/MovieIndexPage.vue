@@ -26,6 +26,10 @@ export default {
     this.$http.get("/api/movies").then((response) => {
       this.movies = response.data;
     });
+    console.log("############");
+    this.$http.get("/api/users").then((response) => {
+      console.log("response333.data :>> ", response.data);
+    });
   },
   data() {
     return {

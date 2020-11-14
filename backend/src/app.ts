@@ -10,7 +10,6 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
 
-let indexRouter = require("./routes/index");
 let usersRouter = require("./routes/users");
 let moviesRouter = require("./routes/movies");
 
@@ -41,9 +40,6 @@ const todoSchema = new mongoose.Schema({
 module.exports = mongoose.model("Todo", todoSchema);
 
 
-
-
-
 // view engine setup
 app.set("public", path.join(__dirname, "public"));
 app.set("view engine", "pug");
@@ -58,9 +54,8 @@ app.use(
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
 app.use("/api/movies", moviesRouter);
+app.use("/api/users", usersRouter);
 
 // catch 404 and forward to error handler
 app.use((req: any, res: any, next: any) => {
