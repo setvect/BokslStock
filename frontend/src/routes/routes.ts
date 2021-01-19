@@ -18,11 +18,6 @@ const routes: Array<RouteConfig> = [
     name: "show",
     component: () => import("@/components/MovieShowPage.vue"),
   },
-  {
-    path: "/mongoCrud",
-    name: "mongoCrud",
-    component: () => import("@/components/mongo/mongoCrud.vue"),
-  }
 ];
 
 export default new VueRouter({

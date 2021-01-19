@@ -1,17 +1,26 @@
 {
   "version": "0.2.0",
-  "configurations": [{
-    "type": "node",
-    "request": "launch",
-    "name": "Launch and Debug",
-    "runtimeExecutable": "${workspaceRoot}/backend/node_modules/.bin/ts-node-dev",
-    "runtimeArgs": [
-      "--respawn",
-      "./src/bin/server.ts"
-    ],
-    "autoAttachChildProcesses": true,
-    "internalConsoleOptions": "openOnFirstSessionStart",
-    "console": "integratedTerminal",
-    "cwd": "${workspaceRoot}/backend"
-  }]
+  "configurations": [
+    // VSCode에서 자체적으로 실행가능. 그러니깐 아래 attach 방식보다 더 편하다
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Nest Framework",
+      "args": ["${workspaceFolder}/src/main.ts"],
+      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "sourceMaps": true,
+      "cwd": "${workspaceRoot}",
+      "protocol": "inspector"
+    },
+    // npm run start:debug 실행하고 난뒤 vscode에서 실행
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach NestJS WS",
+      "port": 9229,
+      "restart": true,
+      "stopOnEntry": false,
+      "protocol": "inspector"
+    },
+  ]
 }

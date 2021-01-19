@@ -1,0 +1,27 @@
+### 조회
+GET http://127.0.0.1:3000/api/movies
+
+###
+GET http://127.0.0.1:3000/api/movies/1
+
+###
+POST http://127.0.0.1:3000/api/movies
+Content-Type: application/json
+
+{
+  "title": "콘텍트",
+  "year": 2020,
+  "genres": ["action", "멜로"]
+}
+
+###
+DELETE  http://127.0.0.1:3000/api/movies/1
+
+###
+PATCH   http://127.0.0.1:3000/api/movies/1
+Content-Type: application/json
+
+{
+  "title": "콘텍트aaa",
+  "year": 2025
+}

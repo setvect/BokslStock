@@ -1,7 +1,7 @@
 <template>
   <div class="detail">
     <h1>{{ movie.name }}</h1>
-    <img v-bind:src="movie.poster" class="poster" />
+    <img :src="movie.poster" class="poster" />
     <section>
       <h2>영화정보</h2>
       <dl class="info">
@@ -15,9 +15,9 @@
     </section>
     <section>
       <h2>줄거리</h2>
-      <p v-html="movie.synopsis" class="synopsis"></p>
+      <p class="synopsis" v-html="movie.synopsis" />
     </section>
-    <router-link :to="{ name: 'index', params: { id: movie.id } }" class="link">돌아가기</router-link>
+    <router-link :to="{ name: 'index', params: { id: movie.id } }" class="link"> 돌아가기 </router-link>
   </div>
 </template>
 <script>
