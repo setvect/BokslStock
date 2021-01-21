@@ -26,6 +26,7 @@
     "@nestjs/mapped-types": "^0.2.0",
     "@nestjs/platform-express": "^7.5.1",
     "@nestjs/serve-static": "^2.1.4",
+    "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.5",
     "class-transformer": "^0.3.2",
     "class-validator": "^0.13.1",
