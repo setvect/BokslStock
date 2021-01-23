@@ -26,10 +26,12 @@
     "@nestjs/mapped-types": "^0.2.0",
     "@nestjs/platform-express": "^7.5.1",
     "@nestjs/serve-static": "^2.1.4",
+    "@types/lodash": "^4.14.168",
     "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.5",
     "class-transformer": "^0.3.2",
     "class-validator": "^0.13.1",
+    "lodash": "^4.17.20",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^6.6.3"
