@@ -4,6 +4,7 @@
 /frontend/dist
 /frontend/node_modules
 /db
+/.history
 
 # Logs
 logs

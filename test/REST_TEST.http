@@ -4,13 +4,13 @@ GET http://127.0.0.1:8080/api/crawl
 ###################
 
 ### 조회
-GET http://127.0.0.1:3000/api/movies
+GET http://127.0.0.1:8081/api/movies
 
 ###
-GET http://127.0.0.1:3000/api/movies/1
+GET http://127.0.0.1:8080/api/movies/1
 
 ###
-POST http://127.0.0.1:3000/api/movies
+POST http://127.0.0.1:8080/api/movies
 Content-Type: application/json
 
 {
@@ -20,10 +20,10 @@ Content-Type: application/json
 }
 
 ###
-DELETE  http://127.0.0.1:3000/api/movies/1
+DELETE  http://127.0.0.1:8080/api/movies/1
 
 ###
-PATCH   http://127.0.0.1:3000/api/movies/1
+PATCH   http://127.0.0.1:8080/api/movies/1
 Content-Type: application/json
 
 {
