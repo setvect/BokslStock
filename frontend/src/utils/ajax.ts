@@ -124,11 +124,11 @@ export default class AjaxCall {
     const finallyCall = option.finallyCall || NOTING_OPERATION;
     const errorCall =
       option.errorCall ||
-      function (err) {
+      function (err: any) {
         CommonUtil.popupError(err);
       };
 
-    let loader = null;
+    let loader: any = null;
     // 진행중 메시지 표시 여부
     if (option.wait == null || option.wait != false) {
       loader = Vue.$loading.show({

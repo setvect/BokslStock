@@ -33,11 +33,11 @@ export default class MemoList extends Vue {
   private movies: Array<IMemo> = [];
   mounted(): void {
     console.log("AAAAAAAAAAAAAAAAAA");
-    // // 컴포넌트가 생성될 때, /api/movies에 요청을 보냅니다.
-    // this.$http.get("/api/movies").then((response) => {
-    //   console.log("DDDDDDDDDDDDDDDDDDD");
-    //   this.movies = response.data;
-    // });
+    // 컴포넌트가 생성될 때, /api/movies에 요청을 보냅니다.
+    this.$http.get("/api/movies").then((response) => {
+      console.log("DDDDDDDDDDDDDDDDDDD");
+      this.movies = response.data;
+    });
   }
   private loadList() {
     //

@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@types/jquery": "^3.5.5",
+    "@types/js-cookie": "^2.2.6",
     "@vue/cli-plugin-babel": "~4.5.0",
     "@vue/cli-plugin-typescript": "~4.5.0",
     "@vue/cli-service": "~4.5.0",
