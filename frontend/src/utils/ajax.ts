@@ -22,8 +22,8 @@ export default class AjaxCall {
    * param: 전달 파라미터
    * option: 옵션
    */
-  static get(url: string, param: GenericObject, callback: CallbackFunction, option?: GenericObject) {
-    AjaxCall.ajaxCall("get", url, param, callback, option);
+  static async get(url: string, param: GenericObject, option?: GenericObject) {
+    return await AjaxCall.ajaxCall("get", url, param, option);
   }
 
   /*
@@ -31,8 +31,8 @@ export default class AjaxCall {
    * param: 전달 파라미터
    * option: 옵션
    */
-  static post(url: string, param: GenericObject, callback: CallbackFunction, option?: GenericObject) {
-    AjaxCall.ajaxCall("post", url, param, callback, option);
+  static async post(url: string, param: GenericObject, option?: GenericObject) {
+    return await AjaxCall.ajaxCall("post", url, param, option);
   }
 
   /*
@@ -40,8 +40,8 @@ export default class AjaxCall {
    * param: 전달 파라미터
    * option: 옵션
    */
-  static put(url: string, param: GenericObject, callback: CallbackFunction, option?: GenericObject) {
-    AjaxCall.ajaxCall("put", url, param, callback, option);
+  static async put(url: string, param: GenericObject, option?: GenericObject) {
+    return await AjaxCall.ajaxCall("put", url, param, option);
   }
 
   /*
@@ -49,8 +49,8 @@ export default class AjaxCall {
    * param: 전달 파라미터
    * option: 옵션
    */
-  static patch(url: string, param: GenericObject, callback: CallbackFunction, option?: GenericObject) {
-    AjaxCall.ajaxCall("patch", url, param, callback, option);
+  static async patch(url: string, param: GenericObject, option?: GenericObject) {
+    return await AjaxCall.ajaxCall("patch", url, param, option);
   }
 
   /*
@@ -58,23 +58,47 @@ export default class AjaxCall {
    * param: 전달 파라미터
    * option: 옵션
    */
-  static delete = function (url: string, param: GenericObject, callback: CallbackFunction, option?: GenericObject) {
-    AjaxCall.ajaxCall("delete", url, param, callback, option);
-  };
+  static async delete(url: string, param: GenericObject, option?: GenericObject) {
+    return await AjaxCall.ajaxCall("delete", url, param, option);
+  }
 
-  /*
-   * get, post 처리
-   */
-  private static ajaxCall(method: string, url: string, _param: GenericObject, _callback: CallbackFunction, _option?: GenericObject) {
-    const param = _param || {};
-    const callback = _callback || NOTING_OPERATION;
+  static async ajaxCall(method: string, url: string, _param: GenericObject, _option?: GenericObject) {
     const option = _option || {};
-    const config: { headers: GenericObject } = {
+    const { axiosMethod, config, sendParam, errorCall, finallyCall } = AjaxCall.makeParameter(method, _param, option);
+    let loader: any = null;
+
+    // 진행중 메시지 표시 여부
+    if (option.wait == null || option.wait != false) {
+      loader = Vue.$loading.show({
+        loader: "dots",
+      });
+    }
+    try {
+      if (method === "get") {
+        return await axiosMethod(url, config);
+      } else {
+        return await axiosMethod(url, sendParam, config);
+      }
+    } catch (err) {
+      errorCall(err);
+    } finally {
+      if (loader) {
+        loader.hide();
+        loader = null;
+      }
+      finallyCall();
+    }
+  }
+
+  private static makeParameter(method: string, _param: GenericObject, _option: GenericObject) {
+    const param = _param || {};
+    const option = _option || {};
+    const config: { headers: GenericObject; responseType?: string } = {
       headers: {},
     };
     if (store.getters.token) {
       // 인증 토큰
-      axios.defaults.headers.common["x-auth-token"] = getToken();
+      axios.defaults.headers.common["X-AUTH-TOKEN"] = getToken();
     }
 
     const methodMap: AxiosFunction = {
@@ -85,12 +109,14 @@ export default class AjaxCall {
       delete: axios.delete,
     };
 
-    const callType = option["call-type"];
+    // 기본적으로 Content-Type은 json
+    const callType = option["call-type"] || "json";
 
     const axiosMethod = methodMap[method];
-
     let sendParam: any;
+
     if (method === "get") {
+      // || method === "delete"
       const paramValue = new URLSearchParams();
       Object.keys(param).map((key) => {
         const value = param[key];
@@ -110,8 +136,10 @@ export default class AjaxCall {
       if (callType === "json") {
         sendParam = param;
         config.headers["Content-Type"] = "application/json; charset=utf-8";
-      } else if (callType === "multipart" && method === "post") {
-        // multipart는 post만 허용
+      }
+
+      // multipart는 post만 허용
+      else if (callType === "multipart" && method === "post") {
         sendParam = new FormData();
         $.each(param, function (key, value) {
           if (Array.isArray(value)) {
@@ -133,22 +161,15 @@ export default class AjaxCall {
         CommonUtil.popupError(err);
       };
 
-    let loader: any = null;
-    // 진행중 메시지 표시 여부
-    if (option.wait == null || option.wait != false) {
-      loader = Vue.$loading.show({
-        loader: "dots",
-      });
+    if (option.download) {
+      config["responseType"] = "arraybuffer";
     }
-
-    axiosMethod(url, sendParam)
-      .then((result: any) => callback(result))
-      .catch((err: any) => errorCall(err))
-      .finally(() => {
-        if (loader) {
-          loader.hide();
-        }
-        finallyCall();
-      });
+    return {
+      axiosMethod,
+      config,
+      sendParam,
+      errorCall,
+      finallyCall,
+    };
   }
 }

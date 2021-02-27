@@ -21,7 +21,6 @@
 </template>
 
 <script lang="ts">
-import axios from "axios";
 import { Vue, Component } from "vue-property-decorator";
 import AjaxCall from "../utils/ajax";
 interface IMemo {
@@ -33,11 +32,11 @@ interface IMemo {
 @Component
 export default class MemoList extends Vue {
   private movies: Array<IMemo> = [];
-  mounted(): void {
+  async mounted(): void {
     // 컴포넌트가 생성될 때, /api/movies에 요청을 보냅니다.
-    AjaxCall.get("/api/movies", {}, (result: any) => {
-      this.movies = result.data;
-    });
+    const result: any = await AjaxCall.get("/api/movies", {});
+    console.log("result 111:>> ", result);
+    this.movies = result.data;
   }
   private loadList() {
     //
