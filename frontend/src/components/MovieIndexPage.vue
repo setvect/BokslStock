@@ -21,6 +21,7 @@
 </template>
 
 <script lang="ts">
+import axios from "axios";
 import { Vue, Component } from "vue-property-decorator";
 import AjaxCall from "../utils/ajax";
 interface IMemo {
