@@ -4,7 +4,7 @@ GET http://127.0.0.1:8080/api/crawl
 ###################
 
 ### 조회
-GET http://127.0.0.1:8081/api/movies
+GET http://127.0.0.1:8080/api/movies
 
 ###
 GET http://127.0.0.1:8080/api/movies/1
