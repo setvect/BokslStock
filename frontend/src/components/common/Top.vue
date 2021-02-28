@@ -3,19 +3,19 @@
     <div class="nav_menu">
       <nav>
         <div class="nav toggle">
-          <a id="menu_toggle">
+          <a @click="toggleMenu()">
             <i class="fa fa-bars"></i>
           </a>
         </div>
         <ul class="nav navbar-nav navbar-right">
           <li class>
-            <a href="javascript:void(0)" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false" @click="logout()">
+            <a href="javascript:void(0)" class="user-profile dropdown-toggle" @click="logout()">
               로그아웃
               <span class="glyphicon glyphicon-log-out"></span>
             </a>
           </li>
           <li class="dropdown">
-            <a href="javascript:void(0);" class="dropdown-toggle info-number _edit-my" data-toggle="dropdown" aria-expanded="false" @click="chnagePassword()">
+            <a href="javascript:void(0);" class="dropdown-toggle info-number _edit-my" @click="chnagePassword()">
               비밀번호 변경
               <i class="glyphicon glyphicon-cog"></i>
             </a>
@@ -23,23 +23,36 @@
         </ul>
       </nav>
     </div>
-    <password-change ref="password" />
+    <LoginUserEdit ref="passwordModal" />
   </div>
 </template>
-<script>
-import passwordChangeComponent from "../user/LoginUserEdit.vue";
+<script lang="ts">
+import LoginUserEdit from "../user/LoginUserEdit.vue";
+import { Vue, Component } from "vue-property-decorator";
+import Cookies from "js-cookie";
 
-export default {
+@Component({
   components: {
-    "password-change": passwordChangeComponent,
+    LoginUserEdit,
   },
-  methods: {
-    logout() {
-      // TODO
-    },
-    chnagePassword() {
-      // TODO
-    },
-  },
-};
+})
+export default class Home extends Vue {
+  mounted() {
+    Cookies.get("menu-small") == "true" && this.toggleMenu();
+  }
+  logout() {
+    // TODO
+    this.$router.push({ name: "login" });
+  }
+  $refs!: {
+    passwordModal: LoginUserEdit;
+  };
+  chnagePassword() {
+    this.$refs.passwordModal.open();
+  }
+  toggleMenu() {
+    $("body").toggleClass("nav-md nav-sm");
+    Cookies.set("menu-small", $("body").hasClass("nav-sm").toString(), { expires: 30, path: "/" });
+  }
+}
 </script>

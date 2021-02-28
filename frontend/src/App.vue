@@ -1,14 +1,9 @@
 <template>
-  <div>
-    <router-view />
-  </div>
+  <router-view />
 </template>
-<script type="text/javascript">
-export default {
-  data() {
-    return {};
-  },
-  mounted() {},
-  methods: {},
-};
+<script lang="ts">
+import { Vue, Component } from "vue-property-decorator";
+
+@Component
+export default class App extends Vue {}
 </script>

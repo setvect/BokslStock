@@ -4,14 +4,11 @@ import Vue from "vue";
 import "vue-loading-overlay/dist/vue-loading.css";
 import { getToken } from "./auth";
 import CommonUtil from "./common-util";
+import { GenericObject } from "@/api/types";
 
 const NOTING_OPERATION = () => {
   // No Operation
 };
-
-type GenericObject = { [key: string]: any };
-
-type CallbackFunction = (result: any) => any;
 
 // get, delete, option,head 타입 유형과 post, put, patch 유형을 만족하기 위해서 param1, param2로 나눠었음
 type AxiosFunction = { [key: string]: (url: string, param1?: any, param2?: any) => Promise<any> };

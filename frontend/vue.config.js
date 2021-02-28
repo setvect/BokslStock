@@ -1,3 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const webpack = require("webpack");
+
 module.exports = {
   devServer: {
     port: 8081,
@@ -11,6 +14,16 @@ module.exports = {
         },
       },
     },
+  },
+  configureWebpack: {
+    plugins: [
+      new webpack.ProvidePlugin({
+        // 글로벌 변수
+        $: "jquery",
+        Cookies: "js-cookie",
+        Swal: "sweetalert2",
+      }),
+    ],
   },
   outputDir: "../dist/frontend", // 2. 배포 파일의 위치를 지정
 };

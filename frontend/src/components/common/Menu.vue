@@ -14,23 +14,25 @@
   </div>
   <!-- /sidebar menu -->
 </template>
-<script>
-export default {
-  name: "LeftMenu",
-  data() {
-    return {};
-  },
-  computed: {
-    currentName() {
-      return this.$route.name;
-    },
-  },
+
+<script lang="ts">
+import { Vue, Component } from "vue-property-decorator";
+
+@Component
+export default class Menu extends Vue {
+  beforeCreate() {
+    document.body.className = "nav-md";
+  }
+
+  get currentName(): string {
+    return this.$route.name || "";
+  }
   mounted() {
-    // TODO
-  },
-  methods: {},
-};
+    //
+  }
+}
 </script>
+
 <style scoped>
 .main_menu .fa {
   text-align: left;

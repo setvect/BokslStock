@@ -13,16 +13,14 @@
     </div>
   </div>
 </template>
-<script type="text/javascript">
-// vue 객체 생성
-export default {
-  name: "Setting",
-  data: function () {
-    return {};
-  },
+
+<script lang="ts">
+import { Vue, Component } from "vue-property-decorator";
+
+@Component
+export default class Setting extends Vue {
   mounted() {
-    //
-  },
-  methods: {},
-};
+    // TODO
+  }
+}
 </script>

@@ -9,20 +9,34 @@
     <div class="row">
       <div class="col-md-12 col-sm-12 col-xs-12">
         <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
+        <div class="x_panel">리포트.</div>
       </div>
     </div>
   </div>
 </template>
-<script type="text/javascript">
-// vue 객체 생성
-export default {
-  name: "Report",
-  data: function () {
-    return {};
-  },
+<script lang="ts">
+import { Vue, Component } from "vue-property-decorator";
+
+@Component
+export default class Report extends Vue {
   mounted() {
-    //
-  },
-  methods: {},
-};
+    // TODO
+  }
+}
 </script>

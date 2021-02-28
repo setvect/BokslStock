@@ -1,5 +1,14 @@
 @charset "UTF-8";
 
+html,
+body,
+.nav-md,
+.container,
+.main_container,
+.right_col {
+  height: 100%;
+}
+
 .nav {
   display: -ms-flexbox;
   display: block !important;

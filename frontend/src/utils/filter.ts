@@ -1,6 +1,6 @@
 import Vue from "vue";
 import moment from "moment";
-import { IPage } from "@/api/types";
+import { PageMetadata } from "@/api/types";
 
 // 숫자 (,)콤마 추가
 Vue.filter("numberFormat", (value: any) => {
@@ -61,4 +61,4 @@ Vue.filter("relativeDate", (value: any) => {
 });
 
 // 목록 번호 계산. 내림차순(높은 번호 부터)으로 표시
-Vue.filter("indexSeq", (index: number, page: IPage) => page.totalCount - page.startCursor - index);
+Vue.filter("indexSeq", (index: number, page: PageMetadata) => page.totalCount - page.startCursor - index);
