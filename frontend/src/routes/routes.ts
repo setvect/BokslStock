@@ -6,7 +6,25 @@ Vue.use(VueRouter);
 const routes: Array<RouteConfig> = [
   {
     path: "/",
-    redirect: "/movie",
+    name: "login",
+    component: () => import("@/components/user/Login.vue"),
+  },
+  {
+    path: "/home",
+    name: "home",
+    component: () => import("@/components/home.vue"),
+    children: [
+      {
+        path: "setting",
+        name: "setting",
+        component: () => import("@/components/setting/Setting.vue"),
+      },
+      {
+        path: "report",
+        name: "report",
+        component: () => import("@/components/report/Report.vue"),
+      },
+    ],
   },
   {
     path: "/movie",

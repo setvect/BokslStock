@@ -1,0 +1,45 @@
+<template>
+  <div class="top_nav">
+    <div class="nav_menu">
+      <nav>
+        <div class="nav toggle">
+          <a id="menu_toggle">
+            <i class="fa fa-bars"></i>
+          </a>
+        </div>
+        <ul class="nav navbar-nav navbar-right">
+          <li class>
+            <a href="javascript:void(0)" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false" @click="logout()">
+              로그아웃
+              <span class="glyphicon glyphicon-log-out"></span>
+            </a>
+          </li>
+          <li class="dropdown">
+            <a href="javascript:void(0);" class="dropdown-toggle info-number _edit-my" data-toggle="dropdown" aria-expanded="false" @click="chnagePassword()">
+              비밀번호 변경
+              <i class="glyphicon glyphicon-cog"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <password-change ref="password" />
+  </div>
+</template>
+<script>
+import passwordChangeComponent from "../user/LoginUserEdit.vue";
+
+export default {
+  components: {
+    "password-change": passwordChangeComponent,
+  },
+  methods: {
+    logout() {
+      // TODO
+    },
+    chnagePassword() {
+      // TODO
+    },
+  },
+};
+</script>

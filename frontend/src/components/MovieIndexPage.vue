@@ -32,7 +32,7 @@ interface IMemo {
 @Component
 export default class MemoList extends Vue {
   private movies: Array<IMemo> = [];
-  async mounted(): void {
+  async mounted() {
     // 컴포넌트가 생성될 때, /api/movies에 요청을 보냅니다.
     const result: any = await AjaxCall.get("/api/movies", {});
     console.log("result 111:>> ", result);

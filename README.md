@@ -38,4 +38,5 @@ $ node main.js
 ```
 
 ## 참고
-- [vue-typescript-admin-template](https://github.com/Armour/vue-typescript-admin-template)
+- [UI 템플릿 - bootstrap](https://bootstrap-vue.js.org/)
+- [UI 템플릿 - gentelella](https://github.com/ColorlibHQ/gentelella)
