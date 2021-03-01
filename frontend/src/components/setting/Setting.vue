@@ -20,7 +20,7 @@ import { Vue, Component } from "vue-property-decorator";
 @Component
 export default class Setting extends Vue {
   mounted() {
-    // TODO
+    //
   }
 }
 </script>
