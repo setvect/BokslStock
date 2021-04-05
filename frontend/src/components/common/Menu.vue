@@ -16,21 +16,18 @@
 </template>
 
 <script lang="ts">
-import { Vue, Component } from "vue-property-decorator";
+import Vue from "vue";
 
-@Component
-export default class Menu extends Vue {
+export default Vue.extend({
+  computed: {
+    currentName(): string {
+      return this.$route.name || "";
+    },
+  },
   beforeCreate() {
     document.body.className = "nav-md";
-  }
-
-  get currentName(): string {
-    return this.$route.name || "";
-  }
-  mounted() {
-    //
-  }
-}
+  },
+});
 </script>
 
 <style scoped>

@@ -33,22 +33,19 @@
 </template>
 
 <script lang="ts">
+import Vue from "vue";
 import LeftMenu from "@/components/common/Menu.vue";
 import Top from "@/components/common/Top.vue";
-import { Vue, Component } from "vue-property-decorator";
 
-@Component({
+export default Vue.extend({
+  name: "Home",
   components: {
     LeftMenu,
     Top,
   },
-})
-export default class Home extends Vue {
   beforeCreate() {
     document.body.className = "nav-md";
-  }
-  mounted() {
-    //
-  }
-}
+  },
+  mounted() {},
+});
 </script>

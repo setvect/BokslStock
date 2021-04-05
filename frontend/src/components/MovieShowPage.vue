@@ -1,40 +1,35 @@
 <template>
   <div class="detail">
-    <h1>{{ movie.name }}</h1>
+    <h1>{{ movie.title }}</h1>
     <img :src="movie.poster" class="poster" />
     <section>
       <h2>영화정보</h2>
       <dl class="info">
-        <dt>감독</dt>
-        <dd>{{ movie.director }}</dd>
-        <dt>출연</dt>
-        <dd>{{ movie.actors }}</dd>
-        <dt>러닝타임</dt>
-        <dd>{{ movie.time }}</dd>
+        <dt>년도</dt>
+        <dd>{{ movie.year }}</dd>
+        <dt>장르</dt>
+        <dd>{{ movie.genres.join(", ") }}</dd>
       </dl>
-    </section>
-    <section>
-      <h2>줄거리</h2>
-      <p class="synopsis" v-html="movie.synopsis" />
     </section>
     <router-link :to="{ name: 'index', params: { id: movie.id } }" class="link"> 돌아가기 </router-link>
   </div>
 </template>
-<script>
-export default {
+
+<script lang="ts">
+import Vue from "vue";
+import { Movie } from "./MovieIndexPage.vue";
+
+export default Vue.extend({
   data() {
     return {
-      movie: {},
+      movie: {} as Movie,
     };
   },
   created() {
-    console.log("this :>> ", this);
     const id = this.$route.params.id;
-    console.log("id :>> ", id);
-    this.$http.get(`/api/movies/${id}`).then((response) => {
-      console.log("response :>> ", response);
-      this.movie = response.data[0];
+    this.$http.get(`/api/movies/${id}`).then(({ data }) => {
+      this.movie = data;
     });
   },
-};
+});
 </script>

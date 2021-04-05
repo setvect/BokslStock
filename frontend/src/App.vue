@@ -1,9 +1,11 @@
 <template>
   <router-view />
 </template>
-<script lang="ts">
-import { Vue, Component } from "vue-property-decorator";
 
-@Component
-export default class App extends Vue {}
+<script lang="ts">
+import Vue from "vue";
+
+export default Vue.extend({
+  name: "App",
+});
 </script>

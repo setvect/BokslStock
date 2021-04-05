@@ -8,10 +8,10 @@
           <img :src="movie.poster" class="poster" />
         </router-link>
         <div class="detail">
-          <strong class="tit">{{ movie.name }}</strong>
+          <strong class="tit">{{ movie.title }}</strong>
           <span class="rate">
-            예매율
-            <span class="num">{{ movie.rate }}</span>
+            년도
+            <span class="num">{{ movie.year }}</span>
           </span>
           <router-link :to="{ path: `/movie/${movie.id}` }" class="link">자세히보기</router-link>
         </div>
@@ -19,27 +19,26 @@
     </ul>
   </div>
 </template>
-
 <script lang="ts">
-import { Vue, Component } from "vue-property-decorator";
+import Vue from "vue";
 import AjaxCall from "../utils/ajax";
-interface IMemo {
+
+export interface Movie {
   memoSeq: number;
   content: string;
   regDate: Date;
 }
 
-@Component
-export default class MemoList extends Vue {
-  private movies: Array<IMemo> = [];
+export default Vue.extend({
+  data() {
+    return {
+      movies: [] as Array<Movie>,
+    };
+  },
   async mounted() {
     // 컴포넌트가 생성될 때, /api/movies에 요청을 보냅니다.
     const result: any = await AjaxCall.get("/api/movies", {});
-    console.log("result 111:>> ", result);
     this.movies = result.data;
-  }
-  private loadList() {
-    //
-  }
-}
+  },
+});
 </script>

@@ -26,33 +26,36 @@
     <LoginUserEdit ref="passwordModal" />
   </div>
 </template>
+
 <script lang="ts">
+import Vue from "vue";
 import LoginUserEdit from "../user/LoginUserEdit.vue";
-import { Vue, Component } from "vue-property-decorator";
 import Cookies from "js-cookie";
 
-@Component({
+export default Vue.extend({
   components: {
     LoginUserEdit,
   },
-})
-export default class Home extends Vue {
+  computed: {
+    passwordModal(): InstanceType<typeof LoginUserEdit> {
+      return this.$refs.passwordModal as InstanceType<typeof LoginUserEdit>;
+    },
+  },
   mounted() {
     Cookies.get("menu-small") == "true" && this.toggleMenu();
-  }
-  logout() {
-    // TODO
-    this.$router.push({ name: "login" });
-  }
-  $refs!: {
-    passwordModal: LoginUserEdit;
-  };
-  chnagePassword() {
-    this.$refs.passwordModal.open();
-  }
-  toggleMenu() {
-    $("body").toggleClass("nav-md nav-sm");
-    Cookies.set("menu-small", $("body").hasClass("nav-sm").toString(), { expires: 30, path: "/" });
-  }
-}
+  },
+  methods: {
+    logout() {
+      // TODO
+      this.$router.push({ name: "login" });
+    },
+    chnagePassword() {
+      this.passwordModal.open();
+    },
+    toggleMenu() {
+      $("body").toggleClass("nav-md nav-sm");
+      Cookies.set("menu-small", $("body").hasClass("nav-sm").toString(), { expires: 30, path: "/" });
+    },
+  },
+});
 </script>

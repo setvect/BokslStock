@@ -21,26 +21,42 @@
     </div>
   </div>
 </template>
-<script lang="ts">
-import { GenericObject } from "@/api/types.d.ts";
-import { Vue, Component, Watch } from "vue-property-decorator";
 
-@Component
-export default class Setting extends Vue {
-  private form = {
-    password: "",
-  };
-  private redirect: undefined;
+<script lang="ts">
+import { GenericObject } from "@/api/types";
+import Vue from "vue";
+
+export default Vue.extend({
+  name: "Home",
+  components: {
+    //
+  },
+  data() {
+    return {
+      redirect: {} as GenericObject,
+      form: {
+        password: "",
+      },
+    };
+  },
+  watch: {
+    $route: {
+      immediate: true,
+      handler(route: GenericObject) {
+        this.redirect = route.query && route.query.redirect;
+      },
+    },
+  },
   beforeCreate() {
     document.body.className = "login";
-  }
-
-  @Watch("$route", { immediate: true })
-  nameChanged(route: GenericObject) {
-    this.redirect = route.query && route.query.redirect;
-  }
-  loginProc() {
-    this.$router.push({ name: "setting" });
-  }
-}
+  },
+  mounted() {
+    //
+  },
+  methods: {
+    loginProc() {
+      this.$router.push({ name: "setting" });
+    },
+  },
+});
 </script>
