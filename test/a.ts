@@ -3,32 +3,33 @@ import cheerio from "cheerio";
 import CommonUtil from "@/util/common-util";
 import iconv = require("iconv-lite");
 
-const delay = (ms) =>
-  new Promise((resolve) => {
-    setTimeout(() => {
-      // nothing
-    }, ms);
-  });
+type StockItem = {
+  code: string;
+  name: string;
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(() => resolve(ms), ms));
 
 (async function crawler() {
-  for (let i = 1; i < 2; i++) {
+  const stockList = [];
+  for (let i = 1; i < 3; i++) {
     const htmlDoc: AxiosResponse = await getStockListPage(i);
     const html = iconv.decode(htmlDoc.data, "euc-kr");
 
     const $ = cheerio.load(html);
     const list = $("table.type_2 tbody tr[onmouseover]");
+
     // row
     list.each((i, row) => {
       const link = $(row).find("td:eq(1)").html();
       const matches = /code=(\w*).*>(.*)</.exec(link);
-      const stockList = {};
-      stockList["code"];
-      stockList["code"] = matches[1];
-      stockList["name"] = CommonUtil.unescapeHtml(matches[2]);
-      console.log("stockList :>> ", stockList);
+      const stockItem: StockItem = { code: matches[1], name: CommonUtil.unescapeHtml(matches[2]) };
+      stockList.push(stockItem);
+      console.log("stockItem :>> ", stockItem);
     });
     await delay(1000);
   }
+  console.log("stockList.length :>> ", stockList.length);
 })();
 
 /**

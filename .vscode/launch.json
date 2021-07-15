@@ -29,7 +29,7 @@
       "request": "launch",
       "name": "test code debug",
       "args": ["${workspaceFolder}/test/a.ts"],
-      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "-r", "tsconfig-paths/register", "-r"],
       "sourceMaps": true,
       "cwd": "${workspaceRoot}",
       "protocol": "inspector"
