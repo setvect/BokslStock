@@ -10,6 +10,9 @@
     "sourceMap": true,
     "outDir": "./dist/backend",
     "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "incremental": true
   }
 }

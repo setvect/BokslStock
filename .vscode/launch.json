@@ -22,5 +22,17 @@
       "stopOnEntry": false,
       "protocol": "inspector"
     },
+
+    // =====================
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "test code debug",
+      "args": ["${workspaceFolder}/test/a.ts"],
+      "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+      "sourceMaps": true,
+      "cwd": "${workspaceRoot}",
+      "protocol": "inspector"
+    }
   ]
 }
