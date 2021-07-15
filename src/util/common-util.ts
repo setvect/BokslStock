@@ -10,4 +10,16 @@ export default class CommonUtil {
       .replace(/&quot;/g, '"')
       .replace(/#039;/g, "'");
   }
+
+  /**
+   * 변수의 타입 정보
+   * @param obj
+   */
+  static getClass(obj: any): string {
+    const instance = typeof obj;
+    if (instance === "object") {
+      return obj.constructor.name;
+    }
+    return instance;
+  }
 }
