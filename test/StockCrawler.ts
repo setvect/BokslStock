@@ -22,7 +22,7 @@ const MarketList: Market[] = [
   { name: "kosdaq", seq: 1 },
 ];
 
-class StockCrawler {
+class StockListCrawler {
   async crawler() {
     const stockList: StockItem[] = await this.getStokcList();
     console.log("stockList.length :>> ", stockList.length);
@@ -34,6 +34,7 @@ class StockCrawler {
     });
   }
 
+  // `https://finance.naver.com/sise/sise_market_sum.nhn?sosok=${marketSeq}&page=${page}`,
   /**
    * @param page 페이지 번호
    * @returns
@@ -41,9 +42,9 @@ class StockCrawler {
   async getStockListPage(marketSeq: number, page: number): Promise<AxiosResponse> {
     return await axios({
       method: "get",
-      url: `https://finance.naver.com/sise/sise_market_sum.nhn?sosok=${marketSeq}&page=${page}`,
+      url: Config.crawling.url.stockList.replace("{marketSeq}", marketSeq.toString()).replace("{page}", page.toString()),
       headers: {
-        "User-Agent": Config.userAgent,
+        "User-Agent": Config.crawling.userAgent,
       },
       responseType: "arraybuffer",
     });
@@ -53,7 +54,7 @@ class StockCrawler {
     const stockList: StockItem[] = [];
 
     for (const market of MarketList) {
-      for (let page = 1; page < 2; page++) {
+      for (let page = 1; page < 100; page++) {
         const htmlDoc: AxiosResponse = await this.getStockListPage(market.seq, page);
         const html = iconv.decode(htmlDoc.data, "euc-kr");
         const $ = cheerio.load(html);
@@ -89,6 +90,6 @@ class StockCrawler {
   }
 }
 
-const crawler = new StockCrawler();
+const crawlerStockList = new StockListCrawler();
 
-crawler.crawler();
+crawlerStockList.crawler();
