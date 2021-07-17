@@ -2,36 +2,13 @@ import axios, { AxiosResponse } from "axios";
 import cheerio from "cheerio";
 import CommonUtil from "@/util/common-util";
 import iconv = require("iconv-lite");
-import fs = require("fs");
 import { Config } from "@/config";
 import { StockItem, MarketList } from "./StockStruct";
 
 class StockListCrawler {
   async crawler() {
     const stockList: StockItem[] = await this.getStokcList();
-    console.log("stockList.length :>> ", stockList.length);
-    const json = JSON.stringify(stockList, null, 2);
-    fs.writeFile("./crawler-data/stock-list.json", json, function (err) {
-      if (err) {
-        console.log(err);
-      }
-    });
-  }
-
-  // `https://finance.naver.com/sise/sise_market_sum.nhn?sosok=${marketSeq}&page=${page}`,
-  /**
-   * @param page 페이지 번호
-   * @returns
-   */
-  async getStockListPage(marketSeq: number, page: number): Promise<AxiosResponse> {
-    return await axios({
-      method: "get",
-      url: Config.crawling.url.stockList.replace("{marketSeq}", marketSeq.toString()).replace("{page}", page.toString()),
-      headers: {
-        "User-Agent": Config.crawling.userAgent,
-      },
-      responseType: "arraybuffer",
-    });
+    CommonUtil.saveObjectToJson(stockList, Config.crawling.file.stockList);
   }
 
   async getStokcList(): Promise<StockItem[]> {
@@ -63,14 +40,25 @@ class StockListCrawler {
           stockList.push(stockItem);
         });
         console.log(`market: ${market.name}, page: ${page}`);
-        await this.delay(500);
+        await CommonUtil.delay(500);
       }
     }
     return stockList;
   }
 
-  async delay(ms) {
-    new Promise((resolve) => setTimeout(() => resolve(ms), ms));
+  /**
+   * @param page 페이지 번호
+   * @returns
+   */
+  async getStockListPage(marketSeq: number, page: number): Promise<AxiosResponse> {
+    return await axios({
+      method: "get",
+      url: Config.crawling.url.stockList.replace("{marketSeq}", marketSeq.toString()).replace("{page}", page.toString()),
+      headers: {
+        "User-Agent": Config.crawling.userAgent,
+      },
+      responseType: "arraybuffer",
+    });
   }
 }
 

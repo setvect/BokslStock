@@ -1,3 +1,6 @@
+import { val } from "cheerio/lib/api/attributes";
+import fs = require("fs");
+
 export default class CommonUtil {
   static escapeHtml(text: string): string {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -41,5 +44,44 @@ export default class CommonUtil {
     const escape = CommonUtil.escapeRegExp(org);
     const re = new RegExp(escape, "g");
     return text.replace(re, dest);
+  }
+
+  static async delay(ms: number): Promise<number> {
+    return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
+  }
+
+  static saveObjectToJson(stockList: any, savePath: string) {
+    const json = JSON.stringify(stockList, null, 2);
+    fs.writeFile(savePath, json, (err: NodeJS.ErrnoException) => {
+      if (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  static getElementText(element: cheerio.Cheerio): string {
+    return element.text().trim();
+  }
+
+  static getElementInt(element: cheerio.Cheerio): number | null {
+    const value = CommonUtil.getText(element);
+    if (!value) {
+      return null;
+    }
+    return parseInt(value);
+  }
+
+  static getElementFloat(element: cheerio.Cheerio): number | null {
+    const value = CommonUtil.getText(element);
+    if (!value) {
+      return null;
+    }
+    return parseFloat(value);
+  }
+
+  private static getText(element: cheerio.Cheerio) {
+    let value = this.getElementText(element);
+    value = CommonUtil.replaceAll(value, ",", "");
+    return value;
   }
 }
