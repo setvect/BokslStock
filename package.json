@@ -38,6 +38,7 @@
     "iconv-lite": "^0.6.3",
     "jsdom": "^16.6.0",
     "lodash": "^4.17.20",
+    "moment": "^2.29.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^6.6.3",

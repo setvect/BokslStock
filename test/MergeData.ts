@@ -1,6 +1,6 @@
 import { Config } from "@/config";
 import * as _ from "lodash";
-import fs = require("fs");
+import * as fs from "fs";
 import { promisify } from "util";
 import { StockItem } from "./StockStruct";
 import CommonUtil from "@/util/common-util";

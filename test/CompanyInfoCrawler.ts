@@ -1,11 +1,10 @@
 import { Config } from "@/config";
 import CommonUtil from "@/util/common-util";
-import fs = require("fs");
-import { promisify } from "util";
 import { StockItem, HistoryData } from "./StockStruct";
 import axios, { AxiosResponse } from "axios";
-import iconv = require("iconv-lite");
+import * as iconv from "iconv-lite";
 import cheerio from "cheerio";
+import CrawlerUtil from "./CrawlerUtil";
 
 /**
  * 기업 기본 정보 크롤링
@@ -13,8 +12,7 @@ import cheerio from "cheerio";
  */
 class CompanyInfoCrawler {
   async crawler() {
-    const stockList = await this.loadStockList();
-
+    const stockList = await CrawlerUtil.loadStockList();
     const newStockList = await this.crawlerDetail(stockList);
     CommonUtil.saveObjectToJson(newStockList, Config.crawling.file.stockCompanyList);
   }
@@ -82,13 +80,6 @@ class CompanyInfoCrawler {
       },
       responseType: "arraybuffer",
     });
-  }
-
-  async loadStockList() {
-    const readFilePromise = promisify(fs.readFile);
-    const data = await readFilePromise(Config.crawling.file.stockList, "utf-8");
-    const stockList: StockItem[] = JSON.parse(data);
-    return stockList;
   }
 }
 

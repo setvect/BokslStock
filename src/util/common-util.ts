@@ -1,5 +1,4 @@
-import { val } from "cheerio/lib/api/attributes";
-import fs = require("fs");
+import * as fs from "fs";
 
 export default class CommonUtil {
   static escapeHtml(text: string): string {
@@ -50,9 +49,17 @@ export default class CommonUtil {
     return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
   }
 
-  static saveObjectToJson(stockList: any, savePath: string) {
-    const json = JSON.stringify(stockList, null, 2);
+  static saveObjectToJson(data: any, savePath: string) {
+    const json = JSON.stringify(data, null, 2);
     fs.writeFile(savePath, json, (err: NodeJS.ErrnoException) => {
+      if (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  static saveText(text: string, savePath: string) {
+    fs.writeFile(savePath, text, (err: NodeJS.ErrnoException) => {
       if (err) {
         console.error(err);
       }

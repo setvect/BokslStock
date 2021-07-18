@@ -7,12 +7,15 @@ const Config = {
       // 기업정보: 실시간 PER, 실시간 PBR, 배당수익률, 상장주식수
       companyInfo: "https://finance.naver.com/item/main.nhn?code={code}",
       // 월별 주가 시세
-      marketPrice: "https://api.finance.naver.com/siseJson.naver?symbol={code}&requestType=1&startTime={start}&endTime={end}&timeframe=month",
+      marketPrice: "https://api.finance.naver.com/siseJson.naver?symbol={code}&requestType=1&startTime={start}&endTime={end}&timeframe=day",
     },
     file: {
       stockList: "./crawler-data/stock-list.json",
       stockCompanyList: "./crawler-data/stock-company-list.json",
       stockMergeList: "./crawler-data/stock-merge-list.json",
+    },
+    dir: {
+      marketPrice: "./crawler-data/marketPrice/",
     },
   },
 };
