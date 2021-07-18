@@ -12,6 +12,7 @@ const Config = {
     file: {
       stockList: "./crawler-data/stock-list.json",
       stockCompanyList: "./crawler-data/stock-company-list.json",
+      stockMergeList: "./crawler-data/stock-merge-list.json",
     },
   },
 };
