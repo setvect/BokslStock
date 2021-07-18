@@ -65,18 +65,14 @@ export default class CommonUtil {
 
   static getElementInt(element: cheerio.Cheerio): number | null {
     const value = CommonUtil.getText(element);
-    if (!value) {
-      return null;
-    }
-    return parseInt(value);
+    const n = parseInt(value);
+    return isNaN(n) ? null : n;
   }
 
   static getElementFloat(element: cheerio.Cheerio): number | null {
     const value = CommonUtil.getText(element);
-    if (!value) {
-      return null;
-    }
-    return parseFloat(value);
+    const n = parseFloat(value);
+    return isNaN(n) ? null : n;
   }
 
   private static getText(element: cheerio.Cheerio) {

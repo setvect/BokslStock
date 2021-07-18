@@ -6,8 +6,8 @@ const Config = {
       stockList: "https://finance.naver.com/sise/sise_market_sum.nhn?sosok={marketSeq}&page={page}",
       // 기업정보: 실시간 PER, 실시간 PBR, 배당수익률, 상장주식수
       companyInfo: "https://finance.naver.com/item/main.nhn?code={code}",
-      // 일일 주가 시세
-      marketPrice: "https://api.finance.naver.com/siseJson.naver?symbol={code}&requestType=1&startTime={start}&endTime={end}&timeframe=day",
+      // 월별 주가 시세
+      marketPrice: "https://api.finance.naver.com/siseJson.naver?symbol={code}&requestType=1&startTime={start}&endTime={end}&timeframe=month",
     },
     file: {
       stockList: "./crawler-data/stock-list.json",

@@ -4,6 +4,8 @@ export type StockItem = {
   // kospi, kosdaq
   market: string;
   capitalization: number;
+  // 현재가
+  currentPrice: number;
   // true: 일반 주식, false: etf, 리츠 등
   normalStock?: boolean;
   // 업종
@@ -17,7 +19,7 @@ export type StockItem = {
     // 현금배당 수익률 (%단위)
     dvr: number;
   };
-  historyData: HistoryData[];
+  historyData?: HistoryData[];
 };
 
 export type HistoryData = {

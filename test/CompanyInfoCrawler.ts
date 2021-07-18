@@ -28,15 +28,15 @@ class CompanyInfoCrawler {
       const infoBox = $("#tab_con1");
 
       // per 항목이 있으면 일반주식
-      if (infoBox.find("#_per").length) {
+      if (infoBox.find("#_eps").length) {
         stockItem.normalStock = true;
         const shareText = infoBox.find("#tab_con1 > .first tbody tr:eq(2) td:eq(0)").text();
         stockItem.currentIndicator = {
           shareNumber: parseInt(CommonUtil.replaceAll(shareText, ",", "")),
-          per: parseFloat(infoBox.find("#_per").text()),
-          eps: parseFloat(infoBox.find("#_eps").text()),
-          pbr: parseFloat(infoBox.find("#_pbr").text()),
-          dvr: parseFloat(infoBox.find("#_dvr").text()),
+          per: CommonUtil.getElementFloat(infoBox.find("#_per")),
+          eps: CommonUtil.getElementFloat(infoBox.find("#_eps")),
+          pbr: CommonUtil.getElementFloat(infoBox.find("#_pbr")),
+          dvr: CommonUtil.getElementFloat(infoBox.find("#_dvr")),
         };
         stockItem.industry = $(".sub_tit7 em a").text();
 
@@ -83,6 +83,7 @@ class CompanyInfoCrawler {
       responseType: "arraybuffer",
     });
   }
+
   async loadStockList() {
     const readFilePromise = promisify(fs.readFile);
     const data = await readFilePromise(Config.crawling.file.stockList, "utf-8");

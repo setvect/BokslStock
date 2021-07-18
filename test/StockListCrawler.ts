@@ -28,19 +28,21 @@ class StockListCrawler {
         // row
         list.each((i, row) => {
           const link = $(row).find("td:eq(1)").html();
-          const temp = $(row).find("td:eq(6)").text();
-          const capitalization = parseInt(CommonUtil.replaceAll(temp, ",", ""));
+          const currentPrice = CommonUtil.getElementInt($(row).find("td:eq(2)"));
+          const capitalization = CommonUtil.getElementInt($(row).find("td:eq(6)"));
           const matches = /code=(\w*).*>(.*)</.exec(link);
           const stockItem: StockItem = {
             code: matches[1],
             name: CommonUtil.unescapeHtml(matches[2]),
             market: market.name,
             capitalization: capitalization,
+            currentPrice,
           };
           stockList.push(stockItem);
         });
-        console.log(`market: ${market.name}, page: ${page}`);
-        await CommonUtil.delay(500);
+        const delayTime = 500 + Math.random() * 1000;
+        console.log(`market: ${market.name}, page: ${page}, delayTime: ${delayTime}`);
+        await CommonUtil.delay(delayTime);
       }
     }
     return stockList;
