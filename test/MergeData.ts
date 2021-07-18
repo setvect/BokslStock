@@ -6,8 +6,7 @@ import { StockItem } from "./StockStruct";
 import CommonUtil from "@/util/common-util";
 
 /**
- * 기업 기본 정보 크롤링
- * 실시간 PER, 실시간 PBR, 실시간 EPS, 업종, 배당수익률, 상장주식수, 일반 주식/ETF,리츠 구분
+ * 크롤링한 정보 병합, 임시로 사용되는 프로그래
  */
 class CompanyInfoCrawler {
   async crawler() {

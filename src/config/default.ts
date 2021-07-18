@@ -18,6 +18,11 @@ const Config = {
       marketPrice: "./crawler-data/marketPrice/",
     },
   },
+  report: {
+    file: {
+      stockList: "./crawler-data/report/stock-list.xlsx",
+    },
+  },
 };
 
 export default Config;
