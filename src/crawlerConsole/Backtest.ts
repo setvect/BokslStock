@@ -4,6 +4,7 @@ import CommonUtil from "@/util/common-util";
 import * as Excel from "exceljs";
 import * as moment from "moment";
 import * as _ from "lodash";
+import {StockItem} from "@/crawlerConsole/StockStruct";
 
 const compareStock = {
   code: "069500",
@@ -137,7 +138,7 @@ class Backtest {
     CommonUtil.applyAutoColumnWith(worksheet);
   }
 
-  private async backtest(targetList: import("d:/intellij-project/BokslStock/test/StockStruct").StockItem[]) {
+  private async backtest(targetList: StockItem[]) {
     const stockResult: StockItemBacktestResult[] = [];
 
     const promises = targetList.map(async (s) => {
