@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import { promisify } from "util";
-
+import * as Excel from "exceljs";
 export default class CommonUtil {
   static escapeHtml(text: string): string {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -114,7 +114,7 @@ export default class CommonUtil {
    * @return 최대 낙폭 계산 - MDD(Max. Draw Down)
    */
   static getMdd(values: number[]) {
-    let highValue = 0;
+    let highValue = -1;
     let mdd = 0;
 
     values.forEach((v) => {
@@ -150,6 +150,19 @@ export default class CommonUtil {
   static getPercentage(value: number, point = 0) {
     const up = Math.pow(10, point);
     return Math.round(value * up * 100) / up;
+  }
+
+  static applyAutoColumnWith(worksheet: Excel.Worksheet) {
+    worksheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column["eachCell"]({ includeEmpty: true }, function (cell) {
+        const columnLength = cell.value ? cell.value.toString().length + 5 : 10;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = maxLength < 10 ? 10 : maxLength;
+    });
   }
 
   private static getText(element: cheerio.Cheerio) {

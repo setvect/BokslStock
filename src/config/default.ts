@@ -21,6 +21,7 @@ const Config = {
   report: {
     file: {
       stockList: "./crawler-data/report/stock-list.xlsx",
+      backtest: "./crawler-data/report/backtest.xlsx",
     },
   },
 };

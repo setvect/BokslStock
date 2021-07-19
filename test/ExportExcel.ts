@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { promisify } from "util";
 import { StockItem } from "./StockStruct";
 import * as Excel from "exceljs";
+import CommonUtil from "@/util/common-util";
 
 /**
  * 종목 정보를 엑셀로 내보내기
@@ -191,17 +192,7 @@ export class ExportExcel {
     // 틀고정
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
 
-    // 컬럼 넓이
-    worksheet.columns.forEach((column) => {
-      let maxLength = 0;
-      column["eachCell"]({ includeEmpty: true }, function (cell) {
-        const columnLength = cell.value ? cell.value.toString().length + 5 : 10;
-        if (columnLength > maxLength) {
-          maxLength = columnLength;
-        }
-      });
-      column.width = maxLength < 10 ? 10 : maxLength;
-    });
+    CommonUtil.applyAutoColumnWith(worksheet);
   }
 
   async loadStockCompanyList(): Promise<StockItem[]> {
