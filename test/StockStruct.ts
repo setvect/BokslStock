@@ -21,11 +21,13 @@ export type StockItem = {
     dvr: number;
   };
   historyData?: HistoryData[];
-  rank?: {
-    per?: number;
-    pbr?: number;
-    dvr?: number;
-  };
+  rank?: Ranking;
+};
+
+export type Ranking = {
+  per?: number;
+  pbr?: number;
+  dvr?: number;
 };
 
 export type HistoryData = {

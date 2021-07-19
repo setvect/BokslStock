@@ -1,5 +1,4 @@
 import { Config } from "@/config";
-import * as _ from "lodash";
 import * as fs from "fs";
 import { promisify } from "util";
 import { StockItem } from "./StockStruct";
@@ -8,11 +7,11 @@ import * as Excel from "exceljs";
 /**
  * 종목 정보를 엑셀로 내보내기
  */
-class ExportExcel {
+export class ExportExcel {
   async crawler() {
     const stockList = await this.loadStockCompanyList();
-    // const filterdStockList = this.filterStock(stockList, "historyData[2]");
-    const filterdStockList = this.filterStock(stockList, "currentIndicator");
+    const filterdStockList = this.filterStock(stockList, "historyData[2]");
+    // const filterdStockList = this.filterStock(stockList, "currentIndicator");
 
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("종목");
@@ -107,7 +106,8 @@ class ExportExcel {
       .filter((s) => eval("s." + baseObject).per != null && eval("s." + baseObject).per > 0)
       .filter((s) => eval("s." + baseObject).pbr > 0.2)
       .filter((s) => s.capitalization > 700)
-      .filter((s) => !s.name.endsWith("우"))
+      // 우선주 제외
+      // .filter((s) => s.code.endsWith("0"))
       .filter((s) => !s.name.endsWith("홀딩스"))
       .filter((s) => !s.name.endsWith("지주"))
       .filter((s) => s.historyData[2].op > 0)
