@@ -9,10 +9,14 @@ import CommonUtil from "@/util/common-util";
  * 종목 정보를 엑셀로 내보내기
  */
 export class ExportExcel {
+  // private baseObject = "historyData[3]";
+  private baseObject = "currentIndicator";
+  private topItem = 30;
+  private cash = 15_000_000;
+
   async crawler() {
     const stockList = await this.loadStockCompanyList();
-    const filterdStockList = this.filterStock(stockList, "historyData[2]");
-    // const filterdStockList = this.filterStock(stockList, "currentIndicator");
+    const filterdStockList = this.filterStock(stockList, this.baseObject);
 
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("종목");
@@ -35,6 +39,8 @@ export class ExportExcel {
       { header: "PBR-순위", key: "pbr_rank" },
       { header: "배당수익률-순위", key: "dvr_rank" },
       { header: "순위 합계", key: "rank_sum" },
+      { header: "매수 수량", key: "qty" },
+      { header: "매수 금액", key: "amount" },
     ];
 
     for (let year = 2020; year >= 2018; year--) {
@@ -52,7 +58,7 @@ export class ExportExcel {
       ];
     }
 
-    filterdStockList.forEach((s) => {
+    filterdStockList.forEach((s, idx) => {
       const row = {
         name: s.name,
         code: s.code,
@@ -63,6 +69,10 @@ export class ExportExcel {
         normalStock: s.normalStock,
         industry: s.industry,
       };
+      if (idx < this.topItem) {
+        row["qty"] = Math.floor(this.cash / this.topItem / s.currentPrice);
+        row["amount"] = s.currentPrice * row["qty"];
+      }
       if (s.normalStock) {
         row["current_shareNumber"] = s.currentIndicator.shareNumber;
         row["current_per"] = s.currentIndicator.per;

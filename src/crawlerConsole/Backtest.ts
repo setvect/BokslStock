@@ -4,7 +4,7 @@ import CommonUtil from "@/util/common-util";
 import * as Excel from "exceljs";
 import * as moment from "moment";
 import * as _ from "lodash";
-import {StockItem} from "@/crawlerConsole/StockStruct";
+import { StockItem } from "@/crawlerConsole/StockStruct";
 
 const compareStock = {
   code: "069500",
@@ -23,18 +23,20 @@ class Backtest {
   // private from = new Date(2020, 3, 1);
   // private to = new Date(2021, 2, 31);
   // private baseObject = "historyData[1]";
+  // private topItem = 30;
 
   // private from = new Date(2019, 3, 1);
   // private to = new Date(2020, 2, 31);
   // private baseObject = "historyData[0]";
+  // private topItem = 30;
 
   async test() {
     const exportExcel = new ExportExcel();
     const stockList = await exportExcel.loadStockCompanyList();
     const filterdStockList = exportExcel.filterStock(stockList, this.baseObject);
 
-    // const targetList = filterdStockList.slice(0, this.topItem);
-    const targetList = filterdStockList.slice(filterdStockList.length - this.topItem);
+    const targetList = filterdStockList.slice(0, this.topItem);
+    // const targetList = filterdStockList.slice(filterdStockList.length - this.topItem);
     const { stockResult, compareStockResult }: { stockResult: StockItemBacktestResult[]; compareStockResult: StockItemBacktestResult } = await this.backtest(targetList);
 
     const avgGain = _.meanBy(stockResult, (p) => p.gain);
@@ -98,7 +100,7 @@ class Backtest {
     worksheet.addRow([]);
     worksheet.addRow(["---------------------"]);
     worksheet.addRow(["평균수익률", CommonUtil.getPercentage(avgGain, 2) + "%"]);
-    worksheet.addRow(["MDD", CommonUtil.getPercentage(CommonUtil.getMdd(gainHistory), 2) + "%"]);
+    worksheet.addRow(["MDD", CommonUtil.getPercentage(CommonUtil.getMdd(gainHistory.map((p) => p + 1)), 2) + "%"]);
     worksheet.addRow([`비교 지수 수익률`, `${CommonUtil.getPercentage(compareStockResult.gain, 2)}%`]);
     const comparePriceHistory = compareStockResult.priceHistory.map((p) => p[1]);
     const compareMdd = CommonUtil.getPercentage(CommonUtil.getMdd(comparePriceHistory), 2);
