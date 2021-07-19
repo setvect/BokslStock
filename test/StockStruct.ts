@@ -3,6 +3,7 @@ export type StockItem = {
   name: string;
   // kospi, kosdaq
   market: string;
+  // 시총
   capitalization: number;
   // 현재가
   currentPrice: number;
@@ -20,6 +21,11 @@ export type StockItem = {
     dvr: number;
   };
   historyData?: HistoryData[];
+  rank?: {
+    per?: number;
+    pbr?: number;
+    dvr?: number;
+  };
 };
 
 export type HistoryData = {
