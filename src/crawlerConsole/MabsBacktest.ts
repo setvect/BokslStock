@@ -5,26 +5,6 @@ import CommonUtil from "@/util/common-util";
 import { GenericObject } from "@/types/type";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
-import { access } from "fs";
-
-const targetStock: StockItem[] = [
-  {
-    code: "069500",
-    name: "KODEX 200",
-  },
-  {
-    code: "122630",
-    name: "KODEX 레버리지",
-  },
-];
-
-const condition = {
-  cash: 10_000_000,
-  feeRate: 0.00015,
-  investRatio: 0.99,
-  start: new Date(2003, 0, 1),
-  end: new Date(2021, 5, 30),
-};
 
 type StockItem = {
   code: string;
@@ -54,24 +34,31 @@ type StockPrice = {
   };
 };
 
+type Condition = {
+  stock: StockItem;
+  cash: number;
+  feeRate: number;
+  investRatio: number;
+  start: Date;
+  end: Date;
+};
+
 /**
  * 이동평균선 돌파 백테스트
  */
 class MabsBacktest {
-  private start = new Date(2003, 0, 1);
-  private end = new Date();
   private baseObject = "historyData[2]";
   private topItem = 30;
 
-  async test(stockItem: StockItem) {
+  async test(condition: Condition) {
     // 1. 데이터 블러오기
-    const text = await CommonUtil.readTextFile(this.getFilePath(stockItem));
+    const text = await CommonUtil.readTextFile(this.getFilePath(condition.stock));
     const priceObject: Array<[string, number, number, number]> = JSON.parse(text);
     priceObject.splice(0, 1);
 
     // 2. 데이터 가공
     const initClosePrice = priceObject[0][3];
-    const marketPriceList = priceObject.map(
+    const marketPriceList: StockPrice[] = priceObject.map(
       (p): StockPrice => {
         return { date: p[0], open: p[1], high: p[1], low: p[2], close: p[3], gain: CommonUtil.getYield(p[3], initClosePrice), ma: {}, trade: {} };
       },
@@ -98,11 +85,25 @@ class MabsBacktest {
       unitPrice: 0,
     };
 
-    for (let i = 1; i < marketPriceList.length; i++) {
+    const formStr = moment(condition.start).format("YYYYMMDD");
+    const endStr = moment(condition.end).format("YYYYMMDD");
+
+    const resultAcc: StockPrice[] = [];
+
+    for (let i = 0; i < marketPriceList.length; i++) {
       const marketPrice = marketPriceList[i];
 
+      const stockPrice = Object.assign(marketPrice, {});
+
+      // if (formStr < marketPrice.date || marketPrice.date < endStr) {
+      //   continue;
+      // }
+      if (marketPrice.date < formStr || marketPrice.date > endStr) {
+        continue;
+      }
+
       if (!marketPriceList[i - 1].ma["60"]) {
-        marketPrice.trade = {
+        stockPrice.trade = {
           cash: account.cash,
           fee: 0,
           qty: 0,
@@ -110,7 +111,8 @@ class MabsBacktest {
           gain: 0,
           total: account.cash + account.qty * account.unitPrice,
         };
-        marketPrice.trade.totalGain = CommonUtil.getYield(marketPrice.trade.total, condition.cash);
+        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+        resultAcc.push(stockPrice);
         continue;
       }
 
@@ -121,7 +123,7 @@ class MabsBacktest {
           account.qty = Math.floor((account.cash * condition.investRatio) / account.unitPrice);
           const fee = Math.floor(account.unitPrice * account.qty * condition.feeRate);
           account.cash = account.cash - account.unitPrice * account.qty - fee;
-          marketPrice.trade = {
+          stockPrice.trade = {
             cash: account.cash,
             fee,
             qty: account.qty,
@@ -130,7 +132,7 @@ class MabsBacktest {
             total: account.cash + account.qty * account.unitPrice,
           };
         } else {
-          marketPrice.trade = {
+          stockPrice.trade = {
             cash: account.cash,
             fee: 0,
             qty: account.qty,
@@ -150,7 +152,7 @@ class MabsBacktest {
         account.qty = 0;
         account.unitPrice = 0;
 
-        marketPrice.trade = {
+        stockPrice.trade = {
           cash: account.cash,
           fee,
           qty: account.qty,
@@ -159,7 +161,7 @@ class MabsBacktest {
           total: account.cash + account.qty * account.unitPrice,
         };
       } else {
-        marketPrice.trade = {
+        stockPrice.trade = {
           cash: account.cash,
           fee: 0,
           qty: account.qty,
@@ -168,8 +170,9 @@ class MabsBacktest {
           total: account.cash + account.qty * marketPrice.close,
         };
       }
-      marketPrice.trade.totalGain = CommonUtil.getYield(marketPrice.trade.total, condition.cash);
-
+      stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+      resultAcc.push(stockPrice);
+      resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
       // 매도 체크
     }
 
@@ -197,7 +200,7 @@ class MabsBacktest {
       { header: "통합수익률", key: "total_gain", style: { numFmt: ".00%" } },
     ];
 
-    for (const marketPrice of marketPriceList) {
+    for (const marketPrice of resultAcc) {
       const row = {
         date: marketPrice["date"],
         open: marketPrice["open"],
@@ -223,14 +226,14 @@ class MabsBacktest {
 
     worksheet.addRow([]);
     worksheet.addRow(["------------"]);
-    const mdd = CommonUtil.getMdd(marketPriceList.map((p) => p.close));
-    const gainResult = ["수익률", Math.round(marketPriceList[marketPriceList.length - 1].gain * 100 * 100) / 100 + "%"];
+    const mdd = CommonUtil.getMdd(resultAcc.map((p) => p.close));
+    const gainResult = ["수익률", Math.round(resultAcc[resultAcc.length - 1].gain * 100 * 100) / 100 + "%"];
     const mddResult = ["MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
     worksheet.addRow(gainResult);
     worksheet.addRow(mddResult);
     worksheet.addRow(["------------"]);
-    const sMdd = CommonUtil.getMdd(marketPriceList.filter((p) => p.trade.total).map((p) => p.trade.total));
-    const sGainResult = ["전략 수익률", Math.round(marketPriceList[marketPriceList.length - 1].trade.totalGain * 100 * 100) / 100 + "%"];
+    const sMdd = CommonUtil.getMdd(resultAcc.filter((p) => p.trade.total).map((p) => p.trade.total));
+    const sGainResult = ["전략 수익률", Math.round(resultAcc[resultAcc.length - 1].trade.totalGain * 100 * 100) / 100 + "%"];
     const sMddResult = ["전략 MDD", Math.round(sMdd * 100 * 100) / 100 + "%"];
     worksheet.addRow(sGainResult);
     worksheet.addRow(sMddResult);
@@ -273,10 +276,10 @@ class MabsBacktest {
     await workbook.xlsx.writeFile(Config.report.file.mabsBacktest);
   }
 
-  async saveMarketPrice() {
+  async saveMarketPrice(start: Date, end: Date) {
     for (const stock of targetStock) {
-      const formStr = moment(this.start).format("YYYYMMDD");
-      const endStr = moment(this.end).format("YYYYMMDD");
+      const formStr = moment(start).format("YYYYMMDD");
+      const endStr = moment(end).format("YYYYMMDD");
       const priceArray = await CrawlerHttp.getMakretPrice(stock.code, formStr, endStr);
       await CommonUtil.saveObjectToJson(priceArray, this.getFilePath(stock));
     }
@@ -287,6 +290,25 @@ class MabsBacktest {
   }
 }
 
-const backtest = new MabsBacktest();
+const targetStock: StockItem[] = [
+  {
+    code: "069500",
+    name: "KODEX 200",
+  },
+  {
+    code: "122630",
+    name: "KODEX 레버리지",
+  },
+];
 
-backtest.test(targetStock[0]);
+const baseCondition: Condition = {
+  stock: targetStock[0],
+  cash: 10_000_000,
+  feeRate: 0.00015,
+  investRatio: 0.99,
+  start: new Date(2003, 2, 1),
+  end: new Date(2021, 5, 30),
+};
+
+const backtest = new MabsBacktest();
+backtest.test(baseCondition);
