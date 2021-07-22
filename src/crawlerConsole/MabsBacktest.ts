@@ -5,6 +5,7 @@ import CommonUtil from "@/util/common-util";
 import { GenericObject } from "@/types/type";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
+import { access } from "fs";
 
 const targetStock: StockItem[] = [
   {
@@ -16,6 +17,14 @@ const targetStock: StockItem[] = [
     name: "KODEX 레버리지",
   },
 ];
+
+const condition = {
+  cash: 10_000_000,
+  feeRate: 0.00015,
+  investRatio: 0.99,
+  start: new Date(2003, 0, 1),
+  end: new Date(2021, 5, 30),
+};
 
 type StockItem = {
   code: string;
@@ -31,13 +40,25 @@ type StockPrice = {
   // 초기 값 기준 수익률
   gain: number;
   ma: GenericObject;
+  trade?: {
+    qty?: number;
+    // 매수단가
+    unitPrice?: number;
+    // 거래 수수료
+    fee?: number;
+    cash?: number;
+    // 수익률
+    gain?: number;
+    total?: number;
+    totalGain?: number;
+  };
 };
 
 /**
  * 이동평균선 돌파 백테스트
  */
 class MabsBacktest {
-  private start = new Date(2003, 1, 1);
+  private start = new Date(2003, 0, 1);
   private end = new Date();
   private baseObject = "historyData[2]";
   private topItem = 30;
@@ -50,17 +71,17 @@ class MabsBacktest {
 
     // 2. 데이터 가공
     const initClosePrice = priceObject[0][3];
-    const marketPrice = priceObject.map(
+    const marketPriceList = priceObject.map(
       (p): StockPrice => {
-        return { date: p[0], open: p[1], high: p[1], low: p[2], close: p[3], gain: CommonUtil.getYield(p[3], initClosePrice), ma: {} };
+        return { date: p[0], open: p[1], high: p[1], low: p[2], close: p[3], gain: CommonUtil.getYield(p[3], initClosePrice), ma: {}, trade: {} };
       },
     );
-    const closePrice = marketPrice.map((p) => p.close);
+    const closePrice = marketPriceList.map((p) => p.close);
 
     const maList = [5, 10, 20, 40, 60, 120];
 
-    for (let i = 0; i < marketPrice.length; i++) {
-      const price = marketPrice[i];
+    for (let i = 0; i < marketPriceList.length; i++) {
+      const price = marketPriceList[i];
 
       for (const maSize of maList) {
         if (i >= maSize - 1) {
@@ -71,42 +92,153 @@ class MabsBacktest {
     }
 
     // 3. 분석
+    const account = {
+      cash: condition.cash,
+      qty: 0,
+      unitPrice: 0,
+    };
+
+    for (let i = 1; i < marketPriceList.length; i++) {
+      const marketPrice = marketPriceList[i];
+
+      if (!marketPriceList[i - 1].ma["60"]) {
+        marketPrice.trade = {
+          cash: account.cash,
+          fee: 0,
+          qty: 0,
+          unitPrice: 0,
+          gain: 0,
+          total: account.cash + account.qty * account.unitPrice,
+        };
+        marketPrice.trade.totalGain = CommonUtil.getYield(marketPrice.trade.total, condition.cash);
+        continue;
+      }
+
+      // 매수 체크
+      if (account.qty == 0) {
+        if (marketPriceList[i - 1].ma["20"] > marketPriceList[i - 1].ma["60"]) {
+          account.unitPrice = marketPrice.open;
+          account.qty = Math.floor((account.cash * condition.investRatio) / account.unitPrice);
+          const fee = Math.floor(account.unitPrice * account.qty * condition.feeRate);
+          account.cash = account.cash - account.unitPrice * account.qty - fee;
+          marketPrice.trade = {
+            cash: account.cash,
+            fee,
+            qty: account.qty,
+            unitPrice: account.unitPrice,
+            gain: 0,
+            total: account.cash + account.qty * account.unitPrice,
+          };
+        } else {
+          marketPrice.trade = {
+            cash: account.cash,
+            fee: 0,
+            qty: account.qty,
+            unitPrice: account.unitPrice,
+            gain: 0,
+            total: account.cash + account.qty * account.unitPrice,
+          };
+        }
+      }
+      // 매도 체크
+      else if (marketPriceList[i - 1].ma["20"] < marketPriceList[i - 1].ma["60"]) {
+        // 시초가 매매
+        const fee = Math.floor(marketPrice.open * account.qty * condition.feeRate);
+        const gain = CommonUtil.getYield(marketPrice.open, account.unitPrice);
+
+        account.cash = marketPrice.open * account.qty - fee;
+        account.qty = 0;
+        account.unitPrice = 0;
+
+        marketPrice.trade = {
+          cash: account.cash,
+          fee,
+          qty: account.qty,
+          unitPrice: account.unitPrice,
+          gain,
+          total: account.cash + account.qty * account.unitPrice,
+        };
+      } else {
+        marketPrice.trade = {
+          cash: account.cash,
+          fee: 0,
+          qty: account.qty,
+          unitPrice: account.unitPrice,
+          gain: 0,
+          total: account.cash + account.qty * marketPrice.close,
+        };
+      }
+      marketPrice.trade.totalGain = CommonUtil.getYield(marketPrice.trade.total, condition.cash);
+
+      // 매도 체크
+    }
 
     // 4.결과 저장(excel)
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("종목");
     worksheet.columns = [
       { header: "날짜", key: "date" },
-      { header: "시가", key: "open" },
-      { header: "고가", key: "high" },
-      { header: "저가.", key: "low" },
-      { header: "종가", key: "close" },
+      { header: "시가", key: "open", style: { numFmt: "###,###" } },
+      { header: "고가", key: "high", style: { numFmt: "###,###" } },
+      { header: "저가.", key: "low", style: { numFmt: "###,###" } },
+      { header: "종가", key: "close", style: { numFmt: "###,###" } },
       { header: "수익률", key: "gain", style: { numFmt: ".00%" } },
-      { header: "이동평균(5)", key: "ma_5" },
-      { header: "이동평균(10)", key: "ma_10" },
-      { header: "이동평균(20)", key: "ma_20" },
-      { header: "이동평균(40)", key: "ma_40" },
-      { header: "이동평균(60)", key: "ma_60" },
-      { header: "이동평균(120)", key: "ma_120" },
+      { header: "이동평균(5)", key: "ma_5", style: { numFmt: "###,###" } },
+      { header: "이동평균(10)", key: "ma_10", style: { numFmt: "###,###" } },
+      { header: "이동평균(20)", key: "ma_20", style: { numFmt: "###,###" } },
+      { header: "이동평균(40)", key: "ma_40", style: { numFmt: "###,###" } },
+      { header: "이동평균(60)", key: "ma_60", style: { numFmt: "###,###" } },
+      { header: "이동평균(120)", key: "ma_120", style: { numFmt: "###,###" } },
+      { header: "수량", key: "trade_qty", style: { numFmt: "###,###" } },
+      { header: "단기", key: "trade_unitPrice", style: { numFmt: "###,###" } },
+      { header: "실현수익", key: "trade_gain", style: { numFmt: ".00%" } },
+      { header: "현금", key: "trade_cash", style: { numFmt: "###,###" } },
+      { header: "통합 금액", key: "trade_total", style: { numFmt: "###,###" } },
+      { header: "통합수익률", key: "total_gain", style: { numFmt: ".00%" } },
     ];
 
-    for (const price of marketPrice) {
+    for (const marketPrice of marketPriceList) {
       const row = {
-        date: price["date"],
-        open: price["open"],
-        high: price["high"],
-        low: price["low"],
-        close: price["close"],
-        gain: price["gain"],
-        ma_5: price.ma["5"],
-        ma_10: price.ma["10"],
-        ma_20: price.ma["20"],
-        ma_40: price.ma["40"],
-        ma_60: price.ma["60"],
-        ma_120: price.ma["120"],
+        date: marketPrice["date"],
+        open: marketPrice["open"],
+        high: marketPrice["high"],
+        low: marketPrice["low"],
+        close: marketPrice["close"],
+        gain: marketPrice["gain"],
+        ma_5: marketPrice.ma["5"],
+        ma_10: marketPrice.ma["10"],
+        ma_20: marketPrice.ma["20"],
+        ma_40: marketPrice.ma["40"],
+        ma_60: marketPrice.ma["60"],
+        ma_120: marketPrice.ma["120"],
+        trade_qty: marketPrice.trade.qty,
+        trade_unitPrice: marketPrice.trade.unitPrice,
+        trade_gain: marketPrice.trade.gain,
+        trade_cash: marketPrice.trade.cash,
+        trade_total: marketPrice.trade.total,
+        total_gain: marketPrice.trade.totalGain,
       };
       worksheet.addRow(row);
     }
+
+    worksheet.addRow([]);
+    worksheet.addRow(["------------"]);
+    const mdd = CommonUtil.getMdd(marketPriceList.map((p) => p.close));
+    const gainResult = ["수익률", Math.round(marketPriceList[marketPriceList.length - 1].gain * 100 * 100) / 100 + "%"];
+    const mddResult = ["MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
+    worksheet.addRow(gainResult);
+    worksheet.addRow(mddResult);
+    worksheet.addRow(["------------"]);
+    const sMdd = CommonUtil.getMdd(marketPriceList.filter((p) => p.trade.total).map((p) => p.trade.total));
+    const sGainResult = ["전략 수익률", Math.round(marketPriceList[marketPriceList.length - 1].trade.totalGain * 100 * 100) / 100 + "%"];
+    const sMddResult = ["전략 MDD", Math.round(sMdd * 100 * 100) / 100 + "%"];
+    worksheet.addRow(sGainResult);
+    worksheet.addRow(sMddResult);
+
+    console.log(gainResult);
+    console.log(mddResult);
+    console.log(sGainResult);
+    console.log(sMddResult);
 
     worksheet.eachRow((row, rIdx) => {
       row.eachCell((cell, cIdx) => {
