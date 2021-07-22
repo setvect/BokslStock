@@ -16,12 +16,14 @@ const Config = {
     },
     dir: {
       marketPrice: "./crawler-data/marketPrice/",
+      mabsMarketPrice: "./crawler-data/mabs/",
     },
   },
   report: {
     file: {
       stockList: "./crawler-data/report/stock-list.xlsx",
       backtest: "./crawler-data/report/backtest.xlsx",
+      mabsBacktest: "./crawler-data/report/mabsBacktest.xlsx",
     },
   },
 };
