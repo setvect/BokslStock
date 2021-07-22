@@ -1,10 +1,11 @@
 import { Config } from "@/config";
 import CommonUtil from "@/util/common-util";
 import { StockItem, HistoryData } from "./StockStruct";
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import * as iconv from "iconv-lite";
 import cheerio from "cheerio";
 import CrawlerUtil from "./CrawlerUtil";
+import CrawlerHttp from "./CrawlerHttp";
 
 /**
  * 기업 기본 정보 크롤링
@@ -20,7 +21,7 @@ class CompanyInfoCrawler {
   private async crawlerDetail(stockList: StockItem[]) {
     for (let i = 0; i < stockList.length; i++) {
       const stockItem = stockList[i];
-      const htmlDoc: AxiosResponse = await this.crawlerCompany(stockItem.code);
+      const htmlDoc: AxiosResponse = await CrawlerHttp.crawlerCompany(stockItem.code);
       const html = iconv.decode(htmlDoc.data, "euc-kr");
       const $ = cheerio.load(html);
       const infoBox = $("#tab_con1");
@@ -69,17 +70,6 @@ class CompanyInfoCrawler {
       await CommonUtil.delay(delayTime);
     }
     return stockList;
-  }
-
-  async crawlerCompany(code: string) {
-    return await axios({
-      method: "get",
-      url: Config.crawling.url.companyInfo.replace("{code}", code),
-      headers: {
-        "User-Agent": Config.crawling.userAgent,
-      },
-      responseType: "arraybuffer",
-    });
   }
 }
 
