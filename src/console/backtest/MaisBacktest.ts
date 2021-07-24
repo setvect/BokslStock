@@ -1,55 +1,14 @@
 import * as moment from "moment";
-import CrawlerHttp from "./CrawlerHttp";
 import Config from "@/config/default";
 import CommonUtil from "@/util/common-util";
-import { GenericObject } from "@/types/type";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
-
-type StockItem = {
-  code: string;
-  name: string;
-};
-
-type StockPrice = {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  // 초기 값 기준 수익률
-  gain: number;
-  ma: GenericObject;
-  trade?: {
-    qty?: number;
-    // 매수단가
-    unitPrice?: number;
-    // 거래 수수료
-    fee?: number;
-    cash?: number;
-    // 수익률
-    gain?: number;
-    total?: number;
-    totalGain?: number;
-  };
-};
-
-type Condition = {
-  stock: StockItem;
-  cash: number;
-  feeRate: number;
-  investRatio: number;
-  start: Date;
-  end: Date;
-};
+import { Condition, StockItem, StockPrice } from "./BacktestType";
 
 /**
- * 이동평균선 돌파 백테스트
+ * 이동평균선 반전 백테스트
  */
 class MabsBacktest {
-  private baseObject = "historyData[2]";
-  private topItem = 30;
-
   async test(condition: Condition) {
     // 1. 데이터 블러오기
     const text = await CommonUtil.readTextFile(this.getFilePath(condition.stock));
@@ -95,14 +54,11 @@ class MabsBacktest {
 
       const stockPrice = Object.assign(marketPrice, {});
 
-      // if (formStr < marketPrice.date || marketPrice.date < endStr) {
-      //   continue;
-      // }
       if (marketPrice.date < formStr || marketPrice.date > endStr) {
         continue;
       }
 
-      if (!marketPriceList[i - 1].ma["60"]) {
+      if (!marketPriceList[i - 1].ma[condition.ma]) {
         stockPrice.trade = {
           cash: account.cash,
           fee: 0,
@@ -118,7 +74,7 @@ class MabsBacktest {
 
       // 매수 체크
       if (account.qty == 0) {
-        if (marketPriceList[i - 1].ma["20"] > marketPriceList[i - 1].ma["60"]) {
+        if (marketPriceList[i - 1].ma[condition.ma] < marketPrice.ma[condition.ma]) {
           account.unitPrice = marketPrice.open;
           account.qty = Math.floor((account.cash * condition.investRatio) / account.unitPrice);
           const fee = Math.floor(account.unitPrice * account.qty * condition.feeRate);
@@ -143,7 +99,7 @@ class MabsBacktest {
         }
       }
       // 매도 체크
-      else if (marketPriceList[i - 1].ma["20"] < marketPriceList[i - 1].ma["60"]) {
+      else if (marketPriceList[i - 1].ma[condition.ma] > marketPrice.ma[condition.ma]) {
         // 시초가 매매
         const fee = Math.floor(marketPrice.open * account.qty * condition.feeRate);
         const gain = CommonUtil.getYield(marketPrice.open, account.unitPrice);
@@ -226,22 +182,35 @@ class MabsBacktest {
 
     worksheet.addRow([]);
     worksheet.addRow(["------------"]);
+    const diffDays = moment(condition.end).diff(moment(condition.start), "days");
+    const gain = resultAcc[resultAcc.length - 1].gain;
     const mdd = CommonUtil.getMdd(resultAcc.map((p) => p.close));
-    const gainResult = ["수익률", Math.round(resultAcc[resultAcc.length - 1].gain * 100 * 100) / 100 + "%"];
+    const cagr = CommonUtil.getCagr(1, gain + 1, diffDays);
+
+    const gainResult = ["수익률", Math.round(gain * 100 * 100) / 100 + "%"];
     const mddResult = ["MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
+    const cagrResult = ["CAGR", Math.round(cagr * 100 * 100) / 100 + "%"];
     worksheet.addRow(gainResult);
     worksheet.addRow(mddResult);
+    worksheet.addRow(cagrResult);
     worksheet.addRow(["------------"]);
+
+    const sGain = resultAcc[resultAcc.length - 1].trade.totalGain;
+    const sCagr = CommonUtil.getCagr(1, sGain + 1, diffDays);
     const sMdd = CommonUtil.getMdd(resultAcc.filter((p) => p.trade.total).map((p) => p.trade.total));
-    const sGainResult = ["전략 수익률", Math.round(resultAcc[resultAcc.length - 1].trade.totalGain * 100 * 100) / 100 + "%"];
+    const sGainResult = ["전략 수익률", Math.round(sGain * 100 * 100) / 100 + "%"];
     const sMddResult = ["전략 MDD", Math.round(sMdd * 100 * 100) / 100 + "%"];
+    const sCagrResult = ["전략 CAGR", Math.round(sCagr * 100 * 100) / 100 + "%"];
     worksheet.addRow(sGainResult);
     worksheet.addRow(sMddResult);
+    worksheet.addRow(sCagrResult);
 
     console.log(gainResult);
     console.log(mddResult);
+    console.log(cagrResult);
     console.log(sGainResult);
     console.log(sMddResult);
+    console.log(sCagrResult);
 
     worksheet.eachRow((row, rIdx) => {
       row.eachCell((cell, cIdx) => {
@@ -273,16 +242,7 @@ class MabsBacktest {
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     CommonUtil.applyAutoColumnWith(worksheet);
 
-    await workbook.xlsx.writeFile(Config.report.file.mabsBacktest);
-  }
-
-  async saveMarketPrice(start: Date, end: Date) {
-    for (const stock of targetStock) {
-      const formStr = moment(start).format("YYYYMMDD");
-      const endStr = moment(end).format("YYYYMMDD");
-      const priceArray = await CrawlerHttp.getMakretPrice(stock.code, formStr, endStr);
-      await CommonUtil.saveObjectToJson(priceArray, this.getFilePath(stock));
-    }
+    await workbook.xlsx.writeFile(Config.report.file.maisBacktest);
   }
 
   private getFilePath(stock: { code: string; name: string }): string {
@@ -308,6 +268,7 @@ const baseCondition: Condition = {
   investRatio: 0.99,
   start: new Date(2003, 2, 1),
   end: new Date(2021, 5, 30),
+  ma: 40,
 };
 
 const backtest = new MabsBacktest();

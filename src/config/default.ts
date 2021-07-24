@@ -24,6 +24,7 @@ const Config = {
       stockList: "./crawler-data/report/stock-list.xlsx",
       backtest: "./crawler-data/report/backtest.xlsx",
       mabsBacktest: "./crawler-data/report/mabsBacktest.xlsx",
+      maisBacktest: "./crawler-data/report/maisBacktest.xlsx",
     },
   },
 };
