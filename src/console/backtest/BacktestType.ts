@@ -13,19 +13,21 @@ export type StockPrice = {
   close: number;
   // 초기 값 기준 수익률
   gain: number;
-  ma: GenericObject;
-  trade?: {
-    qty?: number;
-    // 매수단가
-    unitPrice?: number;
-    // 거래 수수료
-    fee?: number;
-    cash?: number;
-    // 수익률
-    gain?: number;
-    total?: number;
-    totalGain?: number;
-  };
+  ma?: GenericObject;
+  trade?: Trade;
+};
+
+export type Trade = {
+  qty?: number;
+  // 매수단가
+  unitPrice?: number;
+  // 거래 수수료
+  fee?: number;
+  cash?: number;
+  // 수익률
+  gain?: number;
+  total?: number;
+  totalGain?: number;
 };
 
 export type BaseCondition = {
@@ -52,7 +54,7 @@ export type Condition = {
  */
 export type AmCondition = {
   // 1월 == 1, 12월 == 12
-  baseMonth: number;
+  diffMonth: number;
 } & BaseCondition;
 
 export type Ohlc = {

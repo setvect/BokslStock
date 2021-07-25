@@ -129,7 +129,6 @@ class MabsBacktest {
       stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
       resultAcc.push(stockPrice);
       resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
-      // 매도 체크
     }
 
     // 4.결과 저장(excel)
@@ -266,7 +265,7 @@ const baseCondition: Condition = {
   cash: 10_000_000,
   feeRate: 0.00015,
   investRatio: 0.99,
-  start: new Date(2003, 2, 1),
+  start: new Date(2004, 0, 1),
   end: new Date(2021, 5, 30),
   ma: 40,
 };
