@@ -274,3 +274,4 @@ const baseCondition: Condition = {
 
 const backtest = new MabsBacktest();
 backtest.test(baseCondition);
+// backtest.saveMarketPrice(new Date(2000, 0, 1), new Date());

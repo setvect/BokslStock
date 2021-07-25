@@ -25,6 +25,7 @@ const Config = {
       backtest: "./crawler-data/report/backtest.xlsx",
       mabsBacktest: "./crawler-data/report/mabsBacktest.xlsx",
       maisBacktest: "./crawler-data/report/maisBacktest.xlsx",
+      amBacktest: "./crawler-data/report/amBacktest.xlsx",
     },
   },
 };

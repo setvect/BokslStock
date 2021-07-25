@@ -28,6 +28,15 @@ export type StockPrice = {
   };
 };
 
+export type BaseCondition = {
+  stock: StockItem;
+  cash: number;
+  feeRate: number;
+  investRatio: number;
+  start: Date;
+  end: Date;
+};
+
 export type Condition = {
   stock: StockItem;
   cash: number;
@@ -36,4 +45,19 @@ export type Condition = {
   start: Date;
   end: Date;
   ma: number;
+};
+
+/**
+ * 절대 모멘텀 조건
+ */
+export type AmCondition = {
+  // 1월 == 1, 12월 == 12
+  baseMonth: number;
+} & BaseCondition;
+
+export type Ohlc = {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 };
