@@ -266,13 +266,13 @@ async function t() {
     feeRate: 0.00015,
     investRatio: 0.99,
     start: new Date(2004, 0, 1),
-    end: new Date(2021, 5, 30),
+    end: new Date(2021, 6, 30),
     diffMonth: 6,
   };
 
   const backtest = new AmBacktest();
 
-  for (let diff = 6; diff <= 12; diff++) {
+  for (let diff = 6; diff <= 6; diff++) {
     baseCondition.diffMonth = diff;
     console.log("diff ============= :>> ", diff);
 

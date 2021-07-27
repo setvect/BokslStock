@@ -17,6 +17,7 @@ const Config = {
     dir: {
       marketPrice: "./crawler-data/marketPrice/",
       mabsMarketPrice: "./crawler-data/mabs/",
+      csvPrice: "./crawler-data/csv/",
     },
   },
   report: {

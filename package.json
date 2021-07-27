@@ -34,6 +34,7 @@
     "cheerio": "^1.0.0-rc.10",
     "class-transformer": "^0.3.2",
     "class-validator": "^0.13.1",
+    "csv-writer": "^1.6.0",
     "exceljs": "^4.2.1",
     "express": "^4.17.1",
     "iconv-lite": "^0.6.3",
