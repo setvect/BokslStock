@@ -25,7 +25,7 @@ const Config = {
       stockList: "./crawler-data/report/stock-list.xlsx",
       financialBacktest: "./crawler-data/report/financialBacktest.xlsx",
       mabsBacktest: "./crawler-data/report/mabsBacktest.xlsx",
-      maisBacktest: "./crawler-data/report/maisBacktest.xlsx",
+      maisBacktest: "./crawler-data/report/maisBacktest{pattern}.xlsx",
       amBacktest: "./crawler-data/report/amBacktest.xlsx",
       rsiBacktest: "./crawler-data/report/rsi.xlsx",
     },

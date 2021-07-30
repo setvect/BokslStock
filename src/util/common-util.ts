@@ -165,6 +165,36 @@ export default class CommonUtil {
     });
   }
 
+  /**
+   *  연속적으로 가장 낮은 금액 찾기
+   */
+  static getMinPriceOfContinuous(closePriceList: number[]) {
+    let minPrice = closePriceList[0];
+    for (const price of closePriceList) {
+      if (minPrice >= price) {
+        minPrice = price;
+      } else {
+        break;
+      }
+    }
+    return minPrice;
+  }
+
+  /**
+   *  연속적으로 가장 높은 금액 찾기
+   */
+  static getMaxPriceOfContinuous(closePriceList: number[]) {
+    let maxPrice = closePriceList[0];
+    for (const price of closePriceList) {
+      if (maxPrice <= price) {
+        maxPrice = price;
+      } else {
+        break;
+      }
+    }
+    return maxPrice;
+  }
+
   private static getText(element: cheerio.Cheerio) {
     let value = this.getElementText(element);
     value = CommonUtil.replaceAll(value, ",", "");
