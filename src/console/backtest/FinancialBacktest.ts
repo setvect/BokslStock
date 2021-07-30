@@ -1,10 +1,10 @@
 import { Config } from "@/config";
-import { ExportExcel } from "./ExportExcel";
+import { ExportExcel } from "@/console/export/ExportExcel";
 import CommonUtil from "@/util/common-util";
 import * as Excel from "exceljs";
 import * as moment from "moment";
 import * as _ from "lodash";
-import { StockItem } from "@/crawlerConsole/StockStruct";
+import { StockItem } from "@/console/crawler/StockStruct";
 
 const compareStock = {
   code: "069500",
@@ -109,7 +109,7 @@ class Backtest {
     // 스타일
     this.appllyStyle(worksheet);
 
-    await workbook.xlsx.writeFile(Config.report.file.backtest);
+    await workbook.xlsx.writeFile(Config.report.file.financialBacktest);
   }
 
   private appllyStyle(worksheet: Excel.Worksheet) {

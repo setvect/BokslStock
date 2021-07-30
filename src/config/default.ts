@@ -23,10 +23,11 @@ const Config = {
   report: {
     file: {
       stockList: "./crawler-data/report/stock-list.xlsx",
-      backtest: "./crawler-data/report/backtest.xlsx",
+      financialBacktest: "./crawler-data/report/financialBacktest.xlsx",
       mabsBacktest: "./crawler-data/report/mabsBacktest.xlsx",
       maisBacktest: "./crawler-data/report/maisBacktest.xlsx",
       amBacktest: "./crawler-data/report/amBacktest.xlsx",
+      rsiBacktest: "./crawler-data/report/rsi.xlsx",
     },
   },
 };

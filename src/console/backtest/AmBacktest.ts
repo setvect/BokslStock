@@ -90,7 +90,7 @@ class AmBacktest {
         const fee = Math.floor(marketPrice.open * account.qty * condition.feeRate);
         const gain = CommonUtil.getYield(marketPrice.open, account.unitPrice);
 
-        account.cash = marketPrice.open * account.qty - fee;
+        account.cash = account.cash + marketPrice.open * account.qty - fee;
         account.qty = 0;
         account.unitPrice = 0;
 
@@ -272,7 +272,7 @@ async function t() {
 
   const backtest = new AmBacktest();
 
-  for (let diff = 6; diff <= 6; diff++) {
+  for (let diff = 2; diff <= 10; diff++) {
     baseCondition.diffMonth = diff;
     console.log("diff ============= :>> ", diff);
 

@@ -11,7 +11,7 @@ export default class CrawlerHttp {
    * @param page 페이지 번호
    * @returns
    */
-  async getStockListPage(marketSeq: number, page: number): Promise<AxiosResponse> {
+  static async getStockListPage(marketSeq: number, page: number): Promise<AxiosResponse> {
     return await axios({
       method: "get",
       url: Config.crawling.url.stockList.replace("{marketSeq}", marketSeq.toString()).replace("{page}", page.toString()),

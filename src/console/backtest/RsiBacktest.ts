@@ -282,7 +282,7 @@ class RsiBacktest {
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     CommonUtil.applyAutoColumnWith(worksheet);
 
-    await workbook.xlsx.writeFile("./crawler-data/report/rsi.xlsx");
+    await workbook.xlsx.writeFile(Config.report.file.rsiBacktest);
   }
 
   private getFilePath(stock: { code: string; name: string }): string {

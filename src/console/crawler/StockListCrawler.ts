@@ -1,9 +1,10 @@
-import axios, { AxiosResponse } from "axios";
+import { AxiosResponse } from "axios";
 import cheerio from "cheerio";
 import CommonUtil from "@/util/common-util";
 import iconv = require("iconv-lite");
 import { Config } from "@/config";
 import { StockItem, MarketList } from "./StockStruct";
+import CrawlerHttp from "./CrawlerHttp";
 
 class StockListCrawler {
   async crawler() {
@@ -16,7 +17,7 @@ class StockListCrawler {
 
     for (const market of MarketList) {
       for (let page = 1; page < 100; page++) {
-        const htmlDoc: AxiosResponse = await this.getStockListPage(market.seq, page);
+        const htmlDoc: AxiosResponse = await CrawlerHttp.getStockListPage(market.seq, page);
         const html = iconv.decode(htmlDoc.data, "euc-kr");
         const $ = cheerio.load(html);
         const list = $("table.type_2 tbody tr[onmouseover]");

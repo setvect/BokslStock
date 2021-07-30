@@ -1,7 +1,7 @@
 import { Config } from "@/config";
 import * as fs from "fs";
 import { promisify } from "util";
-import { StockItem } from "./StockStruct";
+import { StockItem } from "@/console/crawler/StockStruct";
 import * as Excel from "exceljs";
 import CommonUtil from "@/util/common-util";
 
