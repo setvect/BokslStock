@@ -108,7 +108,7 @@ class MabsBacktest {
         const fee = Math.floor(marketPrice.open * account.qty * condition.feeRate);
         const gain = CommonUtil.getYield(marketPrice.open, account.unitPrice);
 
-        account.cash = marketPrice.open * account.qty - fee;
+        account.cash = account.cash + marketPrice.open * account.qty - fee;
         account.qty = 0;
         account.unitPrice = 0;
 

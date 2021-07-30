@@ -104,7 +104,7 @@ class MabsBacktest {
         const fee = Math.floor(marketPrice.open * account.qty * condition.feeRate);
         const gain = CommonUtil.getYield(marketPrice.open, account.unitPrice);
 
-        account.cash = marketPrice.open * account.qty - fee;
+        account.cash = account.cash + marketPrice.open * account.qty - fee;
         account.qty = 0;
         account.unitPrice = 0;
 
@@ -261,12 +261,12 @@ const targetStock: StockItem[] = [
 ];
 
 const baseCondition: Condition = {
-  stock: targetStock[0],
+  stock: targetStock[1],
   cash: 10_000_000,
   feeRate: 0.00015,
   investRatio: 0.99,
-  start: new Date(2004, 0, 1),
-  end: new Date(2021, 5, 30),
+  start: new Date(2012, 0, 1),
+  end: new Date(2016, 11, 31),
   ma: 40,
 };
 

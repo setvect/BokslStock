@@ -21,6 +21,8 @@ export type Trade = {
   qty?: number;
   // 매수단가
   unitPrice?: number;
+  // 매도단가
+  buyPrice?: number;
   // 거래 수수료
   fee?: number;
   cash?: number;
