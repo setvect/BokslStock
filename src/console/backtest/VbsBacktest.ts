@@ -6,14 +6,12 @@ import CommonUtil from "@/util/common-util";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
 import { StockItem, BaseCondition, Trade } from "./BacktestType";
-import CrawlerHttp from "../crawler/CrawlerHttp";
-import { GenericObject } from "frontend/src/api/types";
 
 /**
  * RSI 백테스트
  */
-class RsiBacktest {
-  async test(condition: RsiCondition) {
+class VbsBacktest {
+  async test(condition: VbsCondition) {
     // 1. 데이터 블러오기
     const text = await CommonUtil.readTextFile(this.getFilePath(condition.stock));
     const priceObject: Array<[string, number, number, number, number]> = JSON.parse(text);
@@ -21,8 +19,8 @@ class RsiBacktest {
 
     // 2. 데이터 가공
     const initClosePrice = priceObject[0][4];
-    const marketPriceList: RsiStockPrice[] = priceObject.map(
-      (p): RsiStockPrice => {
+    const marketPriceList: VbsStockPrice[] = priceObject.map(
+      (p): VbsStockPrice => {
         return {
           date: p[0],
           open: p[1],
@@ -30,136 +28,108 @@ class RsiBacktest {
           low: p[3],
           close: p[4],
           gain: CommonUtil.getYield(p[4], initClosePrice),
-          rsi: 0,
-          uperMarket: false,
-          ma: {},
+          targetPrice: Number.MAX_VALUE,
           trade: {},
         };
       },
     );
-    const closePrice = marketPriceList.map((p) => p.close);
-
-    const maList = [200];
-
-    for (let i = 0; i < marketPriceList.length; i++) {
-      const price = marketPriceList[i];
-
-      for (const maSize of maList) {
-        if (i >= maSize - 1) {
-          const priceHistory = closePrice.slice(i - (maSize - 1), i + 1);
-          price.ma[maSize + ""] = _.mean(priceHistory);
-        }
-      }
-    }
 
     // 3. 분석
     const account = {
       cash: condition.cash,
       qty: 0,
-      unitPrice: 0,
+      buyPrice: 0,
       buyCount: 0,
     };
 
     const formStr = moment(condition.start).format("YYYYMMDD");
     const endStr = moment(condition.end).format("YYYYMMDD");
 
-    const resultAcc: RsiStockPrice[] = [];
-    let historyValue = [];
+    const resultAcc: VbsStockPrice[] = [];
 
-    for (let i = 0; i < marketPriceList.length; i++) {
-      const marketPrice = marketPriceList[i];
-      const stockPrice = Object.assign(marketPrice, {});
-      historyValue.push(stockPrice.close);
-      if (historyValue.length >= condition.period) {
-        historyValue = historyValue.slice(-(condition.period + 1));
-      }
+    for (let i = 1; i < marketPriceList.length; i++) {
+      const currentPrice = marketPriceList[i];
+      const beforePrice = marketPriceList[i - 1];
 
-      if (marketPrice.date < formStr || marketPrice.date > endStr) {
+      if (currentPrice.date < formStr || currentPrice.date > endStr) {
         continue;
       }
-      const rsi = StockUtil.getRsi(historyValue);
-      marketPrice.rsi = rsi;
-      marketPrice.uperMarket = marketPrice.ma["200"] <= marketPrice.close;
 
-      // 매수, 또는 추가 매수
-      if (rsi <= condition.downturn2 && account.buyCount <= 1 && marketPrice.uperMarket) {
-        if (account.unitPrice === 0) {
-          account.unitPrice = marketPrice.close;
-        } else {
-          account.unitPrice = (account.unitPrice + marketPrice.close) / 2;
-        }
-        const buyRate = account.buyCount === 0 ? 0.5 : 1;
+      const targetPrice = currentPrice.open + (beforePrice.high - beforePrice.low) * condition.k;
+      // 대세 상승
+      let isTrade = false;
 
-        const qty = Math.floor((account.cash * condition.investRatio * buyRate) / account.unitPrice);
-        account.qty += qty;
-        account.buyCount++;
+      // 매도 체크(전날 매수를 했을 경우)
+      if (account.qty !== 0) {
+        // 그날 시가 매도
+        const fee = Math.floor(currentPrice.open * account.qty * condition.feeRate);
+        const gain = CommonUtil.getYield(currentPrice.open, account.buyPrice);
 
-        const fee = Math.floor(marketPrice.close * qty * condition.feeRate);
-        account.cash = account.cash - account.unitPrice * qty - fee;
-        stockPrice.trade = {
-          cash: account.cash,
-          fee,
-          qty: account.qty,
-          buyPrice: account.unitPrice,
-          gain: 0,
-          total: account.cash + account.qty * account.unitPrice,
-        };
-      }
-      // 매수
-      else if (rsi <= condition.downturn1 && account.buyCount === 0 && marketPrice.uperMarket) {
-        account.unitPrice = marketPrice.close;
-        const qty = Math.floor((account.cash * condition.investRatio * 0.5) / account.unitPrice);
-        account.qty = qty;
-        account.buyCount++;
-
-        const fee = Math.floor(marketPrice.close * qty * condition.feeRate);
-        account.cash = account.cash - account.unitPrice * qty - fee;
-        stockPrice.trade = {
-          cash: account.cash,
-          fee,
-          qty: account.qty,
-          buyPrice: account.unitPrice,
-          gain: 0,
-          total: account.cash + account.qty * account.unitPrice,
-        };
-      }
-      // 매도 체크
-      else if ((rsi >= condition.upturn && account.buyCount !== 0) || (account.buyCount !== 0 && !marketPrice.uperMarket)) {
-        // 종가 매매
-        const fee = Math.floor(marketPrice.close * account.qty * condition.feeRate);
-        const gain = CommonUtil.getYield(marketPrice.close, account.unitPrice);
-
-        account.cash = account.cash + marketPrice.close * account.qty - fee;
+        account.cash = account.cash + currentPrice.open * account.qty - fee;
         account.qty = 0;
-        account.unitPrice = 0;
+        account.buyPrice = 0;
 
+        const stockPrice = _.cloneDeep(currentPrice);
+        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+        stockPrice.targetPrice = 0;
         stockPrice.trade = {
           cash: account.cash,
           fee,
           qty: account.qty,
-          buyPrice: account.unitPrice,
-          sellPrice: marketPrice.close,
+          buyPrice: account.buyPrice,
+          sellPrice: currentPrice.open,
           gain,
-          total: account.cash + account.qty * account.unitPrice,
+          total: account.cash + account.qty * account.buyPrice,
         };
-        account.buyCount = 0;
+        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+        resultAcc.push(stockPrice);
+        resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].open, resultAcc[0].open);
+        isTrade = true;
       }
 
-      if (Object.keys(stockPrice.trade).length === 0) {
+      // 매수 체크
+      if (account.qty === 0) {
+        const stockPrice = _.cloneDeep(currentPrice);
+        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+        stockPrice.targetPrice = targetPrice;
+
+        if (currentPrice.high > stockPrice.targetPrice) {
+          account.buyPrice = stockPrice.targetPrice;
+          account.qty = Math.floor((account.cash * condition.investRatio) / account.buyPrice);
+          const fee = Math.floor(account.buyPrice * account.qty * condition.feeRate);
+          account.cash = account.cash - account.buyPrice * account.qty - fee;
+          stockPrice.trade = {
+            cash: account.cash,
+            fee,
+            qty: account.qty,
+            buyPrice: account.buyPrice,
+            sellPrice: 0,
+            gain: 0,
+            total: account.cash + account.qty * account.buyPrice,
+          };
+          stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+          resultAcc.push(stockPrice);
+          resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
+          isTrade = true;
+        }
+      }
+
+      if (!isTrade) {
+        const stockPrice = _.cloneDeep(currentPrice);
+        stockPrice.targetPrice = targetPrice;
         stockPrice.trade = {
           cash: account.cash,
           fee: 0,
           qty: account.qty,
-          buyPrice: account.unitPrice,
+          buyPrice: account.buyPrice,
           sellPrice: 0,
           gain: 0,
-          total: account.cash + account.qty * account.unitPrice,
+          total: account.cash + account.qty * currentPrice.close,
         };
+        resultAcc.push(stockPrice);
+        resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
+        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
       }
-
-      stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
-      resultAcc.push(stockPrice);
-      resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
     }
 
     // 4.결과 저장(excel)
@@ -169,15 +139,14 @@ class RsiBacktest {
       { header: "날짜", key: "date" },
       { header: "시가", key: "open", style: { numFmt: "###,###" } },
       { header: "고가", key: "high", style: { numFmt: "###,###" } },
-      { header: "저가.", key: "low", style: { numFmt: "###,###" } },
+      { header: "저가", key: "low", style: { numFmt: "###,###" } },
       { header: "종가", key: "close", style: { numFmt: "###,###" } },
       { header: "수익률", key: "gain", style: { numFmt: "0.00%" } },
-      { header: "이동평균(200)", key: "ma_120", style: { numFmt: "###,###" } },
       { header: "대세 상승", key: "uperMarket" },
-      { header: "RSI", key: "rsi", style: { numFmt: "0.00%" } },
+      { header: "목표가", key: "targetPrice", style: { numFmt: "###,###" } },
       { header: "수량", key: "trade_qty", style: { numFmt: "###,###" } },
-      { header: "매입평균가", key: "trade_unitPrice", style: { numFmt: "###,###" } },
-      { header: "매도평균가", key: "trade_buyPrice", style: { numFmt: "###,###" } },
+      { header: "매입평균가", key: "trade_buyPrice", style: { numFmt: "###,###" } },
+      { header: "매도평균가", key: "trade_sellPrice", style: { numFmt: "###,###" } },
       { header: "수수료", key: "fee", style: { numFmt: "###,###" } },
       { header: "실현수익", key: "trade_gain", style: { numFmt: "0.00%" } },
       { header: "현금", key: "trade_cash", style: { numFmt: "###,###" } },
@@ -193,12 +162,10 @@ class RsiBacktest {
         low: marketPrice["low"],
         close: marketPrice["close"],
         gain: marketPrice["gain"],
-        ma_120: marketPrice.ma["200"],
-        rsi: marketPrice.rsi,
-        uperMarket: marketPrice.uperMarket,
+        targetPrice: marketPrice.targetPrice,
         trade_qty: marketPrice.trade.qty,
-        trade_unitPrice: marketPrice.trade.buyPrice,
-        trade_buyPrice: marketPrice.trade.sellPrice,
+        trade_buyPrice: marketPrice.trade.buyPrice,
+        trade_sellPrice: marketPrice.trade.sellPrice,
         fee: marketPrice.trade.fee,
         trade_gain: marketPrice.trade.gain,
         trade_cash: marketPrice.trade.cash,
@@ -212,7 +179,6 @@ class RsiBacktest {
     worksheet.addRow([null, "------------"]);
     const diffDays = moment(condition.end).diff(moment(condition.start), "days");
     console.log("resultAcc.length :>> ", resultAcc.length);
-    console.log("resultAcc[resultAcc.length - 1 :>> ", resultAcc[resultAcc.length - 1]);
     const gain = resultAcc[resultAcc.length - 1].gain;
     const mdd = CommonUtil.getMdd(resultAcc.map((p) => p.close));
     const cagr = CommonUtil.getCagr(1, gain + 1, diffDays);
@@ -282,25 +248,16 @@ class RsiBacktest {
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     CommonUtil.applyAutoColumnWith(worksheet);
 
-    await workbook.xlsx.writeFile(Config.report.file.rsiBacktest);
+    const pattern = ` ${condition.stock.name}_${moment(condition.start).format("YYYYMMDD")}-${moment(condition.end).format("YYYYMMDD")}`;
+    await workbook.xlsx.writeFile(CommonUtil.replaceAll(Config.report.file.vbsBacktest, "{pattern}", pattern));
   }
 
   private getFilePath(stock: { code: string; name: string }): string {
     return Config.crawling.dir.marketPrice + "/" + `${stock.code}_${stock.name}.json`;
   }
-
-  async crawler(stock: StockItem) {
-    const START = "20010101";
-    const END = moment().format("YYYYMMDD");
-
-    const priceArray = await CrawlerHttp.getMakretPrice(stock.code, START, END);
-    await CommonUtil.saveObjectToJson(priceArray, Config.crawling.dir.marketPrice + "/" + `${stock.code}_${stock.name}.json`);
-    const delayTime = 500 + Math.random() * 1000;
-    console.log(`code: ${stock.code}, name: ${stock.name}, delayTime: ${delayTime}`);
-  }
 }
 
-export type RsiStockPrice = {
+export type VbsStockPrice = {
   date: string;
   open: number;
   high: number;
@@ -308,22 +265,13 @@ export type RsiStockPrice = {
   close: number;
   // 초기 값 기준 수익률
   gain: number;
-  rsi: number;
-  uperMarket: boolean;
-  ma?: GenericObject;
+  targetPrice: number;
   trade?: Trade;
 };
 
-export type RsiCondition = {
-  period: number;
-  // 과열 구간
-  upturn: number;
-  // 침체1 구간
-  downturn1: number;
-  // 침체2 구간
-  downturn2: number;
-  // 첫번째 매매 비율
-  firstRatio: number;
+export type VbsCondition = {
+  // 변동성 비율
+  k: number;
 } & BaseCondition;
 
 const targetStock: StockItem[] = [
@@ -337,21 +285,20 @@ const targetStock: StockItem[] = [
   },
 ];
 
-const baseCondition: RsiCondition = {
+const baseCondition: VbsCondition = {
   stock: targetStock[0],
   cash: 10_000_000,
-  feeRate: 0.00015,
-  investRatio: 1,
-  start: new Date(2002, 0, 1),
-  end: new Date(2021, 6, 30),
-  period: 4,
-  upturn: 0.55,
-  downturn1: 0.3,
-  downturn2: 0.25,
-  firstRatio: 0.5,
+  feeRate: 0.0002,
+  investRatio: 0.99,
+  // 20200319 ~ 20210111
+  start: new Date(2002, 11, 1),
+  end: new Date(2021, 6, 31),
+  // start: new Date(2002, 0, 1),
+  // end: new Date(2021, 9, 11),
+  // start: new Date(2021, 0, 1),
+  // end: new Date(2021, 0, 31),
+  k: 0.5,
 };
 
-const backtest = new RsiBacktest();
+const backtest = new VbsBacktest();
 backtest.test(baseCondition);
-
-// backtest.crawler(targetStock[0]);

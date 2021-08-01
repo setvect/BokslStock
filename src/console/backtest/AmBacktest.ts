@@ -69,7 +69,7 @@ class AmBacktest {
             cash: account.cash,
             fee,
             qty: account.qty,
-            unitPrice: account.unitPrice,
+            buyPrice: account.unitPrice,
             gain: 0,
             total: account.cash + account.qty * account.unitPrice,
           };
@@ -78,7 +78,7 @@ class AmBacktest {
             cash: account.cash,
             fee: 0,
             qty: account.qty,
-            unitPrice: account.unitPrice,
+            buyPrice: account.unitPrice,
             gain: 0,
             total: account.cash + account.qty * account.unitPrice,
           };
@@ -98,7 +98,7 @@ class AmBacktest {
           cash: account.cash,
           fee,
           qty: account.qty,
-          unitPrice: account.unitPrice,
+          buyPrice: account.unitPrice,
           gain,
           total: account.cash + account.qty * account.unitPrice,
         };
@@ -107,7 +107,7 @@ class AmBacktest {
           cash: account.cash,
           fee: 0,
           qty: account.qty,
-          unitPrice: account.unitPrice,
+          buyPrice: account.unitPrice,
           gain: 0,
           total: account.cash + account.qty * marketPrice.close,
         };
@@ -148,7 +148,7 @@ class AmBacktest {
         gain: marketPrice["gain"],
         diffClose: this.getDiffClosePrice(marketPriceList, marketPrice["date"], condition.diffMonth),
         trade_qty: marketPrice.trade.qty,
-        trade_unitPrice: marketPrice.trade.unitPrice,
+        trade_unitPrice: marketPrice.trade.buyPrice,
         trade_fee: marketPrice.trade.fee,
         trade_gain: marketPrice.trade.gain,
         trade_cash: marketPrice.trade.cash,

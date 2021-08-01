@@ -59,7 +59,7 @@ class MabsBacktest {
           cash: account.cash,
           fee: 0,
           qty: 0,
-          unitPrice: 0,
+          buyPrice: 0,
           gain: 0,
           total: account.cash + account.qty * account.unitPrice,
         };
@@ -79,8 +79,8 @@ class MabsBacktest {
             cash: account.cash,
             fee,
             qty: account.qty,
-            unitPrice: account.unitPrice,
-            buyPrice: 0,
+            buyPrice: account.unitPrice,
+            sellPrice: 0,
             gain: 0,
             total: account.cash + account.qty * account.unitPrice,
           };
@@ -89,8 +89,8 @@ class MabsBacktest {
             cash: account.cash,
             fee: 0,
             qty: account.qty,
-            unitPrice: account.unitPrice,
-            buyPrice: 0,
+            buyPrice: account.unitPrice,
+            sellPrice: 0,
             gain: 0,
             total: account.cash + account.qty * account.unitPrice,
           };
@@ -110,8 +110,8 @@ class MabsBacktest {
           cash: account.cash,
           fee,
           qty: account.qty,
-          unitPrice: account.unitPrice,
-          buyPrice: marketPrice.close,
+          buyPrice: account.unitPrice,
+          sellPrice: marketPrice.close,
           gain,
           total: account.cash + account.qty * account.unitPrice,
         };
@@ -120,8 +120,8 @@ class MabsBacktest {
           cash: account.cash,
           fee: 0,
           qty: account.qty,
-          unitPrice: account.unitPrice,
-          buyPrice: 0,
+          buyPrice: account.unitPrice,
+          sellPrice: 0,
           gain: 0,
           total: account.cash + account.qty * marketPrice.close,
         };
@@ -163,8 +163,8 @@ class MabsBacktest {
         ma: marketPrice.ma[condition.ma],
         trade_qty: marketPrice.trade.qty,
         fee: marketPrice.trade.fee,
-        trade_unitPrice: marketPrice.trade.unitPrice,
-        trade_buyPrice: marketPrice.trade.buyPrice,
+        trade_unitPrice: marketPrice.trade.buyPrice,
+        trade_buyPrice: marketPrice.trade.sellPrice,
         trade_gain: marketPrice.trade.gain,
         trade_cash: marketPrice.trade.cash,
         trade_total: marketPrice.trade.total,
@@ -191,7 +191,7 @@ class MabsBacktest {
     const sGain = resultAcc[resultAcc.length - 1].trade.totalGain;
     const sCagr = CommonUtil.getCagr(1, sGain + 1, diffDays);
     const sMdd = CommonUtil.getMdd(resultAcc.filter((p) => p.trade.total).map((p) => p.trade.total));
-    const sTradeCount = resultAcc.filter((p) => p.trade.buyPrice).length;
+    const sTradeCount = resultAcc.filter((p) => p.trade.sellPrice).length;
     const sWinCount = resultAcc.filter((p) => p.trade.gain > 0).length;
 
     const sGainResult = [null, "전략 수익률", Math.round(sGain * 100 * 100) / 100 + "%"];
