@@ -55,7 +55,10 @@ class VbsBacktest {
         continue;
       }
 
+      // 목표가
+      // 오늘 시가 + (전날 고가 - 전날 저가) * 변동성 비율
       const targetPrice = currentPrice.open + (beforePrice.high - beforePrice.low) * condition.k;
+      let isTrade = false;
 
       // 매도 체크(전날 매수를 했을 경우)
       if (account.qty !== 0) {
@@ -92,6 +95,7 @@ class VbsBacktest {
         stockPrice.targetPrice = targetPrice;
 
         if (currentPrice.high > stockPrice.targetPrice) {
+          // 정해진 목표가 매수
           account.buyPrice = stockPrice.targetPrice;
           account.qty = Math.floor((account.cash * condition.investRatio) / account.buyPrice);
           const fee = Math.floor(account.buyPrice * account.qty * condition.feeRate);
@@ -139,7 +143,8 @@ class VbsBacktest {
       { header: "고가", key: "high", style: { numFmt: "###,###" } },
       { header: "저가", key: "low", style: { numFmt: "###,###" } },
       { header: "종가", key: "close", style: { numFmt: "###,###" } },
-      { header: "수익률", key: "gain", style: { numFmt: "0.00%" } },
+      { header: "주가 수익률", key: "gain", style: { numFmt: "0.00%" } },
+      { header: "주가 수익비", key: "gain_rate", style: { numFmt: "###,###.00" } },
       { header: "목표가", key: "targetPrice", style: { numFmt: "###,###" } },
       { header: "수량", key: "trade_qty", style: { numFmt: "###,###" } },
       { header: "매입평균가", key: "trade_buyPrice", style: { numFmt: "###,###" } },
@@ -148,7 +153,8 @@ class VbsBacktest {
       { header: "실현수익", key: "trade_gain", style: { numFmt: "0.00%" } },
       { header: "현금", key: "trade_cash", style: { numFmt: "###,###" } },
       { header: "통합 금액", key: "trade_total", style: { numFmt: "###,###" } },
-      { header: "통합수익률", key: "total_gain", style: { numFmt: "0.00%" } },
+      { header: "전략 수익률", key: "total_gain", style: { numFmt: "0.00%" } },
+      { header: "전략 수익비", key: "total_gain_rate", style: { numFmt: "###,###.00" } },
     ];
 
     for (const marketPrice of resultAcc) {
@@ -159,6 +165,7 @@ class VbsBacktest {
         low: marketPrice["low"],
         close: marketPrice["close"],
         gain: marketPrice["gain"],
+        gain_rate: 1 + marketPrice["gain"],
         targetPrice: marketPrice.targetPrice,
         trade_qty: marketPrice.trade.qty,
         trade_buyPrice: marketPrice.trade.buyPrice,
@@ -168,6 +175,7 @@ class VbsBacktest {
         trade_cash: marketPrice.trade.cash,
         trade_total: marketPrice.trade.total,
         total_gain: marketPrice.trade.totalGain,
+        total_gain_rate: 1 + marketPrice.trade.totalGain,
       };
       worksheet.addRow(row);
     }
@@ -283,13 +291,12 @@ const targetStock: StockItem[] = [
 ];
 
 const baseCondition: VbsCondition = {
-  stock: targetStock[0],
+  stock: targetStock[1],
   cash: 10_000_000,
   feeRate: 0.0002,
   investRatio: 0.99,
-  // 20200319 ~ 20210111
-  start: new Date(2002, 11, 1),
-  end: new Date(2021, 6, 31),
+  start: new Date(2011, 0, 1),
+  end: new Date(2021, 5, 31),
   // start: new Date(2002, 0, 1),
   // end: new Date(2021, 9, 11),
   // start: new Date(2021, 0, 1),
