@@ -14,6 +14,7 @@
       - [1.2.3.3. 이동평균 반전](#1233-이동평균-반전)
       - [1.2.3.4. 절대 모멘텀](#1234-절대-모멘텀)
       - [1.2.3.5. RSI 지표를 이용한 매매](#1235-rsi-지표를-이용한-매매)
+      - [1.2.3.6. 변동성 돌파 전략](#1236-변동성-돌파-전략)
   - [1.3. 참고](#13-참고)
 
 ## 1.1. 설치
@@ -111,6 +112,16 @@ npm run ts-node src/console/backtest/MaisBacktest.ts
 - RSI 과열구간 매도
 ```sh
 npm run ts-node src/console/backtest/MaisBacktest.ts
+```
+결과: `./crawler-data/report/rsi.xlsx`
+#### 1.2.3.6. 변동성 돌파 전략
+- 매수 조건
+  - 목표가 < 오늘 주가
+  - 목표가 산출 방법: 목표가 = 오늘 시가 + (어제 고가 - 어제 종가) * k
+- 매도 조건
+  - 매수 후 다음날 시가 매도
+```sh
+npm run ts-node src/console/backtest/VbsBacktest.ts
 ```
 결과: `./crawler-data/report/rsi.xlsx`
 

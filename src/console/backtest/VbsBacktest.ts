@@ -407,12 +407,12 @@ async function baktest() {
     cash: 10_000_000,
     feeRate: 0.0002,
     investRatio: 0.99,
-    start: new Date(2016, 1, 1),
+    start: new Date(2002, 1, 1),
     end: new Date(2021, 6, 31),
     k: 0.5,
   };
 
-  const rangeList = [{ start: new Date(2016, 2 - 1, 1), end: new Date(2021, 7 - 1, 31) }];
+  const rangeList = [{ start: new Date(2002, 11 - 1, 1), end: new Date(2021, 7 - 1, 31) }];
 
   const backtest = new VbsBacktest();
   const summaryList: Summary[] = [];
