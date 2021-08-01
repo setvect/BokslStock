@@ -29,6 +29,7 @@ const Config = {
       amBacktest: "./crawler-data/report/amBacktest.xlsx",
       rsiBacktest: "./crawler-data/report/rsi.xlsx",
       vbsBacktest: "./crawler-data/report/vbs{pattern}.xlsx",
+      vbsBacktestSummary: "./crawler-data/report/vbs_summary.xlsx",
     },
   },
 };
