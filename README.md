@@ -123,7 +123,9 @@ npm run ts-node src/console/backtest/MaisBacktest.ts
 ```sh
 npm run ts-node src/console/backtest/VbsBacktest.ts
 ```
-결과: `./crawler-data/report/rsi.xlsx`
+결과(요약): `./crawler-data/report/vbs_summary.xlsx`
+
+결과(매매내역): `./crawler-data/report/vbs_*.xlsx`
 
 ## 1.3. 참고
 - [UI 템플릿 - bootstrap](https://bootstrap-vue.js.org/)

@@ -227,7 +227,7 @@ class VbsBacktest {
       worksheet.addRow(row);
     }
 
-    const diffDays = moment(condition.end).diff(moment(condition.start), "days");
+    const diffDays = moment(resultAcc[resultAcc.length - 1].date).diff(moment(resultAcc[0].date), "days");
     console.log("resultAcc.length :>> ", resultAcc.length);
     const gain = resultAcc[resultAcc.length - 1].gain;
     const mdd = CommonUtil.getMdd(resultAcc.map((p) => p.close));
@@ -263,7 +263,7 @@ class VbsBacktest {
     worksheet.addRow(sTradeWinRateResult);
 
     worksheet.addRow([null, `----- 조건 -----`]);
-    worksheet.addRow([null, "기간", `${moment(condition.start).format("YYYYMMDD")} ~ ${moment(condition.end).format("YYYYMMDD")}`]);
+    worksheet.addRow([null, "기간", `${resultAcc[0].date} ~ ${resultAcc[resultAcc.length - 1].date}`]);
     worksheet.addRow([null, "대상종목", `${condition.stock.name}(${condition.stock.code})`]);
     worksheet.addRow([null, "시작현금", `${CommonUtil.toComma(condition.cash)}원`]);
     worksheet.addRow([null, "투자비율", `${condition.investRatio * 100}%`]);
@@ -312,7 +312,7 @@ class VbsBacktest {
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     CommonUtil.applyAutoColumnWith(worksheet);
 
-    const pattern = ` ${condition.stock.name}_${moment(condition.start).format("YYYYMMDD")}-${moment(condition.end).format("YYYYMMDD")}`;
+    const pattern = ` ${condition.stock.name}_${resultAcc[0].date}-${resultAcc[resultAcc.length - 1].date}`;
     await workbook.xlsx.writeFile(CommonUtil.replaceAll(Config.report.file.vbsBacktest, "{pattern}", pattern));
 
     const summary: Summary = {
@@ -328,6 +328,7 @@ class VbsBacktest {
         tradeCount: sTradeCount,
         winCount: sWinCount,
       },
+      resultHistory: resultAcc,
     };
     return summary;
   }
@@ -379,6 +380,7 @@ type Summary = {
     tradeCount: number;
     winCount: number;
   };
+  resultHistory: VbsStockPrice[];
   condtion?: VbsCondition;
 };
 
@@ -458,7 +460,7 @@ async function makeReportSummary(summaryList: Summary[]) {
   for (const summary of summaryList) {
     const condition = summary.condtion;
     const row = {
-      rnage: `${moment(condition.start).format("YYYYMMDD")} ~ ${moment(condition.end).format("YYYYMMDD")}`,
+      rnage: `${summary.resultHistory[0].date} ~ ${summary.resultHistory[summary.resultHistory.length - 1].date}`,
       market: `${condition.stock.name}(${condition.stock.code})`,
       cash: condition.cash,
       investRatio: condition.investRatio,
