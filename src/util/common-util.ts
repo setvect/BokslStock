@@ -200,4 +200,8 @@ export default class CommonUtil {
     value = CommonUtil.replaceAll(value, ",", "");
     return value;
   }
+
+  static toComma(value: number) {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
 }

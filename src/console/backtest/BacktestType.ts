@@ -28,8 +28,13 @@ export type Trade = {
   cash?: number;
   // 수익률
   gain?: number;
+  // 수익금
+  gainPrice?: number;
   total?: number;
+  // 전체 수익금
   totalGain?: number;
+  // 매수, 매도, 매매 하지 않음
+  action?: "BUY" | "SELL" | "-";
 };
 
 export type BaseCondition = {

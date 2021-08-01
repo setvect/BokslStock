@@ -1,17 +1,16 @@
-import StockUtil from "@/util/stock-util";
-
 import * as moment from "moment";
 import Config from "@/config/default";
 import CommonUtil from "@/util/common-util";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
 import { StockItem, BaseCondition, Trade } from "./BacktestType";
+import CrawlerHttp from "../crawler/CrawlerHttp";
 
 /**
  * RSI 백테스트
  */
 class VbsBacktest {
-  async test(condition: VbsCondition) {
+  async backtest(condition: VbsCondition) {
     // 1. 데이터 블러오기
     const text = await CommonUtil.readTextFile(this.getFilePath(condition.stock));
     const priceObject: Array<[string, number, number, number, number]> = JSON.parse(text);
@@ -29,6 +28,7 @@ class VbsBacktest {
           close: p[4],
           gain: CommonUtil.getYield(p[4], initClosePrice),
           targetPrice: Number.MAX_VALUE,
+          targetPriceFormula: "",
           trade: {},
         };
       },
@@ -66,6 +66,8 @@ class VbsBacktest {
         const fee = Math.floor(currentPrice.open * account.qty * condition.feeRate);
         const gain = CommonUtil.getYield(currentPrice.open, account.buyPrice);
 
+        const gainPrice = account.qty * currentPrice.open - account.qty * account.buyPrice;
+
         account.cash = account.cash + currentPrice.open * account.qty - fee;
         account.qty = 0;
         account.buyPrice = 0;
@@ -73,13 +75,16 @@ class VbsBacktest {
         const stockPrice = _.cloneDeep(currentPrice);
         stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
         stockPrice.targetPrice = 0;
+
         stockPrice.trade = {
+          action: "SELL",
           cash: account.cash,
           fee,
           qty: account.qty,
           buyPrice: account.buyPrice,
           sellPrice: currentPrice.open,
           gain,
+          gainPrice: gainPrice,
           total: account.cash + account.qty * account.buyPrice,
         };
         stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
@@ -93,6 +98,7 @@ class VbsBacktest {
         const stockPrice = _.cloneDeep(currentPrice);
         stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
         stockPrice.targetPrice = targetPrice;
+        stockPrice.targetPriceFormula = `${currentPrice.open} + (${beforePrice.high} - ${beforePrice.low}) * ${condition.k}`;
 
         if (currentPrice.high > stockPrice.targetPrice) {
           // 정해진 목표가 매수
@@ -101,12 +107,14 @@ class VbsBacktest {
           const fee = Math.floor(account.buyPrice * account.qty * condition.feeRate);
           account.cash = account.cash - account.buyPrice * account.qty - fee;
           stockPrice.trade = {
+            action: "BUY",
             cash: account.cash,
             fee,
             qty: account.qty,
             buyPrice: account.buyPrice,
             sellPrice: 0,
             gain: 0,
+            gainPrice: 0,
             total: account.cash + account.qty * account.buyPrice,
           };
           stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
@@ -119,13 +127,17 @@ class VbsBacktest {
       if (!isTrade) {
         const stockPrice = _.cloneDeep(currentPrice);
         stockPrice.targetPrice = targetPrice;
+        stockPrice.targetPriceFormula = `${currentPrice.open} + (${beforePrice.high} - ${beforePrice.low}) * ${condition.k}`;
+
         stockPrice.trade = {
+          action: "-",
           cash: account.cash,
           fee: 0,
           qty: account.qty,
           buyPrice: account.buyPrice,
           sellPrice: 0,
           gain: 0,
+          gainPrice: 0,
           total: account.cash + account.qty * currentPrice.close,
         };
         resultAcc.push(stockPrice);
@@ -143,14 +155,17 @@ class VbsBacktest {
       { header: "고가", key: "high", style: { numFmt: "###,###" } },
       { header: "저가", key: "low", style: { numFmt: "###,###" } },
       { header: "종가", key: "close", style: { numFmt: "###,###" } },
-      { header: "주가 수익률", key: "gain", style: { numFmt: "0.00%" } },
-      { header: "주가 수익비", key: "gain_rate", style: { numFmt: "###,###.00" } },
-      { header: "목표가", key: "targetPrice", style: { numFmt: "###,###" } },
+      { header: "주가 수익률(종가 기준)", key: "gain", style: { numFmt: "0.00%" } },
+      { header: "주가 수익비(종가 기준)", key: "gain_rate", style: { numFmt: "###,###.00" } },
+      { header: "목표가 계산식", key: "target_price_formula", style: { numFmt: "###,###" } },
+      { header: "목표가", key: "target_price", style: { numFmt: "###,###" } },
+      { header: "매매여부", key: "action", style: { alignment: { horizontal: "center" } } },
       { header: "수량", key: "trade_qty", style: { numFmt: "###,###" } },
-      { header: "매입평균가", key: "trade_buyPrice", style: { numFmt: "###,###" } },
-      { header: "매도평균가", key: "trade_sellPrice", style: { numFmt: "###,###" } },
+      { header: "매입가", key: "trade_buyPrice", style: { numFmt: "###,###" } },
+      { header: "매도가", key: "trade_sellPrice", style: { numFmt: "###,###" } },
       { header: "수수료", key: "fee", style: { numFmt: "###,###" } },
-      { header: "실현수익", key: "trade_gain", style: { numFmt: "0.00%" } },
+      { header: "실현수익률(수수료 X)", key: "trade_gain", style: { numFmt: "0.00%" } },
+      { header: "수익금(수수료 X)", key: "price_gain", style: { numFmt: "###,###" } },
       { header: "현금", key: "trade_cash", style: { numFmt: "###,###" } },
       { header: "통합 금액", key: "trade_total", style: { numFmt: "###,###" } },
       { header: "전략 수익률", key: "total_gain", style: { numFmt: "0.00%" } },
@@ -166,12 +181,15 @@ class VbsBacktest {
         close: marketPrice["close"],
         gain: marketPrice["gain"],
         gain_rate: 1 + marketPrice["gain"],
-        targetPrice: marketPrice.targetPrice,
+        target_price_formula: marketPrice.targetPriceFormula,
+        target_price: marketPrice.targetPrice,
+        action: marketPrice.trade.action,
         trade_qty: marketPrice.trade.qty,
         trade_buyPrice: marketPrice.trade.buyPrice,
         trade_sellPrice: marketPrice.trade.sellPrice,
         fee: marketPrice.trade.fee,
         trade_gain: marketPrice.trade.gain,
+        price_gain: marketPrice.trade.gainPrice,
         trade_cash: marketPrice.trade.cash,
         trade_total: marketPrice.trade.total,
         total_gain: marketPrice.trade.totalGain,
@@ -180,8 +198,6 @@ class VbsBacktest {
       worksheet.addRow(row);
     }
 
-    worksheet.addRow([]);
-    worksheet.addRow([null, "------------"]);
     const diffDays = moment(condition.end).diff(moment(condition.start), "days");
     console.log("resultAcc.length :>> ", resultAcc.length);
     const gain = resultAcc[resultAcc.length - 1].gain;
@@ -191,10 +207,12 @@ class VbsBacktest {
     const gainResult = [null, "수익률", Math.round(gain * 100 * 100) / 100 + "%"];
     const mddResult = [null, "MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
     const cagrResult = [null, "CAGR", Math.round(cagr * 100 * 100) / 100 + "%"];
+
+    worksheet.addRow([]);
+    worksheet.addRow([null, `----- ${condition.stock.name}(${condition.stock.code}) -----`]);
     worksheet.addRow(gainResult);
     worksheet.addRow(mddResult);
     worksheet.addRow(cagrResult);
-    worksheet.addRow([null, "------------"]);
 
     const sGain = resultAcc[resultAcc.length - 1].trade.totalGain;
     const sCagr = CommonUtil.getCagr(1, sGain + 1, diffDays);
@@ -202,6 +220,7 @@ class VbsBacktest {
     const sTradeCount = resultAcc.filter((p) => p.trade.sellPrice).length;
     const sWinCount = resultAcc.filter((p) => p.trade.gain > 0).length;
 
+    worksheet.addRow([null, `----- 전략결과 -----`]);
     const sGainResult = [null, "전략 수익률", Math.round(sGain * 100 * 100) / 100 + "%"];
     const sMddResult = [null, "전략 MDD", Math.round(sMdd * 100 * 100) / 100 + "%"];
     const sCagrResult = [null, "전략 CAGR", Math.round(sCagr * 100 * 100) / 100 + "%"];
@@ -214,6 +233,14 @@ class VbsBacktest {
     worksheet.addRow(sTradeCountResult);
     worksheet.addRow(sTradeWinRateResult);
 
+    worksheet.addRow([null, `----- 조건 -----`]);
+    worksheet.addRow([null, "기간", `${moment(condition.start).format("YYYYMMDD")} ~ ${moment(condition.end).format("YYYYMMDD")}`]);
+    worksheet.addRow([null, "대상종목", `${condition.stock.name}(${condition.stock.code})`]);
+    worksheet.addRow([null, "시작현금", `${CommonUtil.toComma(condition.cash)}원`]);
+    worksheet.addRow([null, "투자비율", `${condition.investRatio * 100}%`]);
+    worksheet.addRow([null, "K", `${condition.k}`]);
+
+    // 결과 출력
     console.log(gainResult);
     console.log(mddResult);
     console.log(cagrResult);
@@ -257,6 +284,16 @@ class VbsBacktest {
     await workbook.xlsx.writeFile(CommonUtil.replaceAll(Config.report.file.vbsBacktest, "{pattern}", pattern));
   }
 
+  async crawler(stock: StockItem) {
+    const START = "20010101";
+    const END = moment().format("YYYYMMDD");
+
+    const priceArray = await CrawlerHttp.getMakretPrice(stock.code, START, END);
+    await CommonUtil.saveObjectToJson(priceArray, Config.crawling.dir.marketPrice + "/" + `${stock.code}_${stock.name}.json`);
+    const delayTime = 500 + Math.random() * 1000;
+    console.log(`code: ${stock.code}, name: ${stock.name}, delayTime: ${delayTime}`);
+  }
+
   private getFilePath(stock: { code: string; name: string }): string {
     return Config.crawling.dir.marketPrice + "/" + `${stock.code}_${stock.name}.json`;
   }
@@ -271,6 +308,8 @@ export type VbsStockPrice = {
   // 초기 값 기준 수익률
   gain: number;
   targetPrice: number;
+  // 목표가 계산식
+  targetPriceFormula: string;
   trade?: Trade;
 };
 
@@ -288,21 +327,47 @@ const targetStock: StockItem[] = [
     code: "122630",
     name: "KODEX 레버리지",
   },
+  {
+    code: "229200",
+    name: "KODEX 코스닥 150",
+  },
+  {
+    code: "233740",
+    name: "KODEX 코스닥150 레버리지",
+  },
 ];
 
-const baseCondition: VbsCondition = {
-  stock: targetStock[1],
-  cash: 10_000_000,
-  feeRate: 0.0002,
-  investRatio: 0.99,
-  start: new Date(2011, 0, 1),
-  end: new Date(2021, 5, 31),
-  // start: new Date(2002, 0, 1),
-  // end: new Date(2021, 9, 11),
-  // start: new Date(2021, 0, 1),
-  // end: new Date(2021, 0, 31),
-  k: 0.5,
-};
+async function baktest() {
+  const baseCondition: VbsCondition = {
+    stock: targetStock[0],
+    cash: 10_000_000,
+    feeRate: 0.0002,
+    investRatio: 0.99,
+    start: new Date(2016, 1, 1),
+    end: new Date(2021, 6, 31),
+    // start: new Date(2011, 0, 1),
+    // end: new Date(2021, 5, 31),
+    // start: new Date(2002, 0, 1),
+    // end: new Date(2021, 9, 11),
+    // start: new Date(2021, 0, 1),
+    // end: new Date(2021, 0, 31),
+    k: 0.5,
+  };
 
-const backtest = new VbsBacktest();
-backtest.test(baseCondition);
+  const backtest = new VbsBacktest();
+  for (const stock of targetStock) {
+    baseCondition.stock = stock;
+    console.log(baseCondition);
+    await backtest.backtest(baseCondition);
+  }
+}
+
+async function crawler() {
+  const backtest = new VbsBacktest();
+  for (const stock of targetStock) {
+    await backtest.crawler(stock);
+  }
+}
+
+// crawler();
+baktest();

@@ -42,7 +42,7 @@ class MabsBacktest {
     const account = {
       cash: condition.cash,
       qty: 0,
-      unitPrice: 0,
+      buyPrice: 0,
     };
 
     const formStr = moment(condition.start).format("YYYYMMDD");
@@ -67,9 +67,9 @@ class MabsBacktest {
           cash: account.cash,
           fee: 0,
           qty: 0,
-          unitPrice: 0,
+          buyPrice: 0,
           gain: 0,
-          total: account.cash + account.qty * account.unitPrice,
+          total: account.cash + account.qty * account.buyPrice,
         };
         stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
         resultAcc.push(stockPrice);
@@ -79,26 +79,26 @@ class MabsBacktest {
       // 매수 체크
       if (account.qty == 0) {
         if (marketPriceList[i - 1].ma["20"] > marketPriceList[i - 1].ma["60"]) {
-          account.unitPrice = marketPrice.open;
-          account.qty = Math.floor((account.cash * condition.investRatio) / account.unitPrice);
-          const fee = Math.floor(account.unitPrice * account.qty * condition.feeRate);
-          account.cash = account.cash - account.unitPrice * account.qty - fee;
+          account.buyPrice = marketPrice.open;
+          account.qty = Math.floor((account.cash * condition.investRatio) / account.buyPrice);
+          const fee = Math.floor(account.buyPrice * account.qty * condition.feeRate);
+          account.cash = account.cash - account.buyPrice * account.qty - fee;
           stockPrice.trade = {
             cash: account.cash,
             fee,
             qty: account.qty,
-            unitPrice: account.unitPrice,
+            buyPrice: account.buyPrice,
             gain: 0,
-            total: account.cash + account.qty * account.unitPrice,
+            total: account.cash + account.qty * account.buyPrice,
           };
         } else {
           stockPrice.trade = {
             cash: account.cash,
             fee: 0,
             qty: account.qty,
-            unitPrice: account.unitPrice,
+            buyPrice: account.buyPrice,
             gain: 0,
-            total: account.cash + account.qty * account.unitPrice,
+            total: account.cash + account.qty * account.buyPrice,
           };
         }
       }
@@ -106,26 +106,26 @@ class MabsBacktest {
       else if (marketPriceList[i - 1].ma["20"] < marketPriceList[i - 1].ma["60"]) {
         // 시초가 매매
         const fee = Math.floor(marketPrice.open * account.qty * condition.feeRate);
-        const gain = CommonUtil.getYield(marketPrice.open, account.unitPrice);
+        const gain = CommonUtil.getYield(marketPrice.open, account.buyPrice);
 
         account.cash = account.cash + marketPrice.open * account.qty - fee;
         account.qty = 0;
-        account.unitPrice = 0;
+        account.buyPrice = 0;
 
         stockPrice.trade = {
           cash: account.cash,
           fee,
           qty: account.qty,
-          unitPrice: account.unitPrice,
+          buyPrice: account.buyPrice,
           gain,
-          total: account.cash + account.qty * account.unitPrice,
+          total: account.cash + account.qty * account.buyPrice,
         };
       } else {
         stockPrice.trade = {
           cash: account.cash,
           fee: 0,
           qty: account.qty,
-          unitPrice: account.unitPrice,
+          buyPrice: account.buyPrice,
           gain: 0,
           total: account.cash + account.qty * marketPrice.close,
         };
@@ -175,7 +175,7 @@ class MabsBacktest {
         ma_60: marketPrice.ma["60"],
         ma_120: marketPrice.ma["120"],
         trade_qty: marketPrice.trade.qty,
-        trade_unitPrice: marketPrice.trade.unitPrice,
+        trade_unitPrice: marketPrice.trade.buyPrice,
         trade_gain: marketPrice.trade.gain,
         trade_cash: marketPrice.trade.cash,
         trade_total: marketPrice.trade.total,
