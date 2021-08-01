@@ -56,8 +56,6 @@ class VbsBacktest {
       }
 
       const targetPrice = currentPrice.open + (beforePrice.high - beforePrice.low) * condition.k;
-      // 대세 상승
-      let isTrade = false;
 
       // 매도 체크(전날 매수를 했을 경우)
       if (account.qty !== 0) {
@@ -142,7 +140,6 @@ class VbsBacktest {
       { header: "저가", key: "low", style: { numFmt: "###,###" } },
       { header: "종가", key: "close", style: { numFmt: "###,###" } },
       { header: "수익률", key: "gain", style: { numFmt: "0.00%" } },
-      { header: "대세 상승", key: "uperMarket" },
       { header: "목표가", key: "targetPrice", style: { numFmt: "###,###" } },
       { header: "수량", key: "trade_qty", style: { numFmt: "###,###" } },
       { header: "매입평균가", key: "trade_buyPrice", style: { numFmt: "###,###" } },
