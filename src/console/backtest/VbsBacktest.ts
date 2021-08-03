@@ -385,22 +385,52 @@ type Summary = {
 };
 
 const targetStock: StockItem[] = [
+  // {
+  //   code: "069500",
+  //   name: "KODEX 200",
+  // },
+  // {
+  //   code: "122630",
+  //   name: "KODEX 레버리지",
+  // },
+  // {
+  //   code: "229200",
+  //   name: "KODEX 코스닥 150",
+  // },
+  // {
+  //   code: "233740",
+  //   name: "KODEX 코스닥150 레버리지",
+  // },
+  // start 2009.12
+  // {
+  //   code: "114800",
+  //   name: "KODEX 인버스",
+  // },
+  // // start 2016.10
+  // {
+  //   code: "252670",
+  //   name: "KODEX 200선물인버스2X",
+  // },
+  // start 2014.2
+  // {
+  //   code: "192090",
+  //   name: "TIGER 차이나CSI300",
+  // },
+  // // start 19970102
   {
-    code: "069500",
-    name: "KODEX 200",
+    code: "A00001",
+    name: "spy",
   },
+  // // start 20000103
   {
-    code: "122630",
-    name: "KODEX 레버리지",
+    code: "A00002",
+    name: "qqq",
   },
-  {
-    code: "229200",
-    name: "KODEX 코스닥 150",
-  },
-  {
-    code: "233740",
-    name: "KODEX 코스닥150 레버리지",
-  },
+  // start 20100211
+  // {
+  //   code: "A00003",
+  //   name: "tqqq",
+  // },
 ];
 
 async function baktest() {
@@ -414,7 +444,32 @@ async function baktest() {
     k: 0.5,
   };
 
-  const rangeList = [{ start: new Date(2002, 11 - 1, 1), end: new Date(2021, 7 - 1, 31) }];
+  const rangeList = [
+    // { start: new Date(2000, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
+    // { start: new Date(2010, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
+    { start: new Date(2000, 1 - 1, 1), end: new Date(2000, 12 - 1, 31) },
+    { start: new Date(2001, 1 - 1, 1), end: new Date(2001, 12 - 1, 31) },
+    { start: new Date(2002, 1 - 1, 1), end: new Date(2002, 12 - 1, 31) },
+    { start: new Date(2003, 1 - 1, 1), end: new Date(2003, 12 - 1, 31) },
+    { start: new Date(2004, 1 - 1, 1), end: new Date(2004, 12 - 1, 31) },
+    { start: new Date(2005, 1 - 1, 1), end: new Date(2005, 12 - 1, 31) },
+    { start: new Date(2006, 1 - 1, 1), end: new Date(2006, 12 - 1, 31) },
+    { start: new Date(2007, 1 - 1, 1), end: new Date(2007, 12 - 1, 31) },
+    { start: new Date(2008, 1 - 1, 1), end: new Date(2008, 12 - 1, 31) },
+    { start: new Date(2009, 1 - 1, 1), end: new Date(2009, 12 - 1, 31) },
+    { start: new Date(2010, 1 - 1, 1), end: new Date(2010, 12 - 1, 31) },
+    // { start: new Date(2011, 1 - 1, 1), end: new Date(2011, 12 - 1, 31) },
+    // { start: new Date(2012, 1 - 1, 1), end: new Date(2012, 12 - 1, 31) },
+    // { start: new Date(2013, 1 - 1, 1), end: new Date(2013, 12 - 1, 31) },
+    // { start: new Date(2014, 1 - 1, 1), end: new Date(2014, 12 - 1, 31) },
+    // { start: new Date(2015, 1 - 1, 1), end: new Date(2015, 12 - 1, 31) },
+    // { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
+    // { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
+    // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
+    // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
+    // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
+    // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
+  ];
 
   const backtest = new VbsBacktest();
   const summaryList: Summary[] = [];
