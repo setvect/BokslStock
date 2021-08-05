@@ -364,8 +364,14 @@ type VbsStockPrice = {
 type VbsCondition = {
   // 변동성 비율
   k: number;
+  stock: StockItem[];
+  cash: number;
+  feeRate: number;
+  investRatio: number;
+  start: Date;
+  end: Date;
   comment?: string;
-} & BaseCondition;
+};
 
 type Summary = {
   market: {
@@ -389,18 +395,18 @@ const targetStock: StockItem[] = [
   //   code: "069500",
   //   name: "KODEX 200",
   // },
-  // {
-  //   code: "122630",
-  //   name: "KODEX 레버리지",
-  // },
+  {
+    code: "122630",
+    name: "KODEX 레버리지",
+  },
   // {
   //   code: "229200",
   //   name: "KODEX 코스닥 150",
   // },
-  // {
-  //   code: "233740",
-  //   name: "KODEX 코스닥150 레버리지",
-  // },
+  {
+    code: "233740",
+    name: "KODEX 코스닥150 레버리지",
+  },
   // start 2009.12
   // {
   //   code: "114800",
@@ -417,15 +423,15 @@ const targetStock: StockItem[] = [
   //   name: "TIGER 차이나CSI300",
   // },
   // // start 19970102
-  {
-    code: "A00001",
-    name: "spy",
-  },
-  // // start 20000103
-  {
-    code: "A00002",
-    name: "qqq",
-  },
+  // {
+  //   code: "A00001",
+  //   name: "spy",
+  // },
+  // // // start 20000103
+  // {
+  //   code: "A00002",
+  //   name: "qqq",
+  // },
   // start 20100211
   // {
   //   code: "A00003",
@@ -435,7 +441,7 @@ const targetStock: StockItem[] = [
 
 async function baktest() {
   const baseCondition: VbsCondition = {
-    stock: targetStock[0],
+    stocks: targetStock,
     cash: 10_000_000,
     feeRate: 0.0002,
     investRatio: 0.99,
@@ -447,17 +453,17 @@ async function baktest() {
   const rangeList = [
     // { start: new Date(2000, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
     // { start: new Date(2010, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
-    { start: new Date(2000, 1 - 1, 1), end: new Date(2000, 12 - 1, 31) },
-    { start: new Date(2001, 1 - 1, 1), end: new Date(2001, 12 - 1, 31) },
-    { start: new Date(2002, 1 - 1, 1), end: new Date(2002, 12 - 1, 31) },
-    { start: new Date(2003, 1 - 1, 1), end: new Date(2003, 12 - 1, 31) },
-    { start: new Date(2004, 1 - 1, 1), end: new Date(2004, 12 - 1, 31) },
-    { start: new Date(2005, 1 - 1, 1), end: new Date(2005, 12 - 1, 31) },
-    { start: new Date(2006, 1 - 1, 1), end: new Date(2006, 12 - 1, 31) },
-    { start: new Date(2007, 1 - 1, 1), end: new Date(2007, 12 - 1, 31) },
-    { start: new Date(2008, 1 - 1, 1), end: new Date(2008, 12 - 1, 31) },
-    { start: new Date(2009, 1 - 1, 1), end: new Date(2009, 12 - 1, 31) },
-    { start: new Date(2010, 1 - 1, 1), end: new Date(2010, 12 - 1, 31) },
+    // { start: new Date(2000, 1 - 1, 1), end: new Date(2000, 12 - 1, 31) },
+    // { start: new Date(2001, 1 - 1, 1), end: new Date(2001, 12 - 1, 31) },
+    // { start: new Date(2002, 1 - 1, 1), end: new Date(2002, 12 - 1, 31) },
+    // { start: new Date(2003, 1 - 1, 1), end: new Date(2003, 12 - 1, 31) },
+    // { start: new Date(2004, 1 - 1, 1), end: new Date(2004, 12 - 1, 31) },
+    // { start: new Date(2005, 1 - 1, 1), end: new Date(2005, 12 - 1, 31) },
+    // { start: new Date(2006, 1 - 1, 1), end: new Date(2006, 12 - 1, 31) },
+    // { start: new Date(2007, 1 - 1, 1), end: new Date(2007, 12 - 1, 31) },
+    // { start: new Date(2008, 1 - 1, 1), end: new Date(2008, 12 - 1, 31) },
+    // { start: new Date(2009, 1 - 1, 1), end: new Date(2009, 12 - 1, 31) },
+    // { start: new Date(2010, 1 - 1, 1), end: new Date(2010, 12 - 1, 31) },
     // { start: new Date(2011, 1 - 1, 1), end: new Date(2011, 12 - 1, 31) },
     // { start: new Date(2012, 1 - 1, 1), end: new Date(2012, 12 - 1, 31) },
     // { start: new Date(2013, 1 - 1, 1), end: new Date(2013, 12 - 1, 31) },
@@ -466,23 +472,20 @@ async function baktest() {
     // { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
     // { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
     // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
-    // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
-    // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
+    { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
+    { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
     // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
   ];
 
   const backtest = new VbsBacktest();
   const summaryList: Summary[] = [];
-  for (const stock of targetStock) {
-    for (const range of rangeList) {
-      baseCondition.stock = stock;
-      baseCondition.start = range.start;
-      baseCondition.end = range.end;
+  for (const range of rangeList) {
+    baseCondition.start = range.start;
+    baseCondition.end = range.end;
 
-      const summary = await backtest.backtest(baseCondition);
-      summary.condtion = _.cloneDeep(baseCondition);
-      summaryList.push(summary);
-    }
+    const summary = await backtest.backtest(baseCondition);
+    summary.condtion = _.cloneDeep(baseCondition);
+    summaryList.push(summary);
   }
 
   await makeReportSummary(summaryList);

@@ -249,10 +249,10 @@ class AmBacktest {
 }
 
 const targetStock: StockItem[] = [
-  {
-    code: "069500",
-    name: "KODEX 200",
-  },
+  // {
+  //   code: "069500",
+  //   name: "KODEX 200",
+  // },
   {
     code: "122630",
     name: "KODEX 레버리지",
@@ -265,8 +265,8 @@ async function t() {
     cash: 10_000_000,
     feeRate: 0.00015,
     investRatio: 0.99,
-    start: new Date(2004, 0, 1),
-    end: new Date(2021, 6, 30),
+    start: new Date(2020, 1 - 1, 1),
+    end: new Date(2020, 12 - 1, 31),
     diffMonth: 6,
   };
 
