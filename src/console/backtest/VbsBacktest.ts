@@ -3,7 +3,7 @@ import Config from "@/config/default";
 import CommonUtil from "@/util/common-util";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
-import { StockItem, BaseCondition, Trade } from "./BacktestType";
+import { StockItem, Trade } from "./BacktestType";
 import CrawlerHttp from "../crawler/CrawlerHttp";
 
 /**
@@ -12,26 +12,41 @@ import CrawlerHttp from "../crawler/CrawlerHttp";
 class VbsBacktest {
   async backtest(condition: VbsCondition) {
     // 1. 데이터 블러오기
-    const text = await CommonUtil.readTextFile(this.getFilePath(condition.stock));
-    const priceObject: Array<[string, number, number, number, number]> = JSON.parse(text);
-    priceObject.splice(0, 1);
+    const stockByPrice: StockCodeByPrice[] = await _.chain(condition.stockList)
+      .reduce(async (promise: Promise<StockCodeByPrice[]>, stock: StockItem) => {
+        const text = await CommonUtil.readTextFile(this.getFilePath(stock));
+        const priceObject: Array<[string, number, number, number, number]> = JSON.parse(text);
+        priceObject.splice(0, 1);
 
-    // 2. 데이터 가공
-    const marketPriceList: VbsStockPrice[] = this.makeVbsStockPrice(priceObject);
+        // 2. 데이터 가공
+        const marketPriceList: VbsStockPrice[] = this.makeVbsStockPrice(priceObject);
+        const dateByIndex = {};
+        for (let i = 0; i < marketPriceList.length; i++) {
+          dateByIndex[marketPriceList[i].date] = i;
+        }
+        const acc = await promise.then();
+        acc.push({
+          stock: stock,
+          price: marketPriceList,
+          priceByDateIndex: dateByIndex,
+        });
+        return Promise.resolve(acc);
+      }, Promise.resolve([]))
+      .value();
 
     // 3. 분석
-    const resultAcc = this.analysis(condition, marketPriceList);
+    const resultAcc = this.analysis(condition, stockByPrice);
 
     // 4.결과 저장(excel)
-    const summary = await this.makeReport(condition, resultAcc);
-    return summary;
+    // const summary = await this.makeReport(condition, resultAcc);
+    // return summary;
   }
 
   /**
    * 데이터 가공
    * @param priceObject
    */
-  private makeVbsStockPrice(priceObject: [string, number, number, number, number][]) {
+  private makeVbsStockPrice(priceObject: Array<[string, number, number, number, number]>) {
     const initClosePrice = priceObject[0][4];
     const marketPriceList: VbsStockPrice[] = priceObject.map(
       (p): VbsStockPrice => {
@@ -54,9 +69,9 @@ class VbsBacktest {
   /**
    * 분석
    * @param condition 조건
-   * @param marketPriceList 시세 데이터
+   * @param codeByPrice 종목별 시세 데이터
    */
-  private analysis(condition: VbsCondition, marketPriceList: VbsStockPrice[]) {
+  private analysis(condition: VbsCondition, codeByPrice: StockCodeByPrice[]): VbsStockPrice[] {
     const account = {
       cash: condition.cash,
       qty: 0,
@@ -64,14 +79,33 @@ class VbsBacktest {
       buyCount: 0,
     };
 
+    let start = moment(condition.start);
+    const end = moment(condition.end);
     const formStr = moment(condition.start).format("YYYYMMDD");
     const endStr = moment(condition.end).format("YYYYMMDD");
-
     const resultAcc: VbsStockPrice[] = [];
+    const codes = codeByPrice.map((p) => p.stock.code);
+    const stockByPrice = codeByPrice[codes[0]];
+    const stockCount = codes.length;
 
-    for (let i = 1; i < marketPriceList.length; i++) {
-      const currentPrice = marketPriceList[i];
-      const beforePrice = marketPriceList[i - 1];
+    console.log("start <= end :>> ", start <= end);
+    for (const code of codes) {
+      const priceList = codeByPrice[code];
+    }
+
+    while (start <= end) {
+      const currentDate = moment(start).format("YYYYMMDD");
+      for (const price of codeByPrice) {
+        const idx = price.priceByDateIndex[currentDate];
+        console.log(price.stock.name, currentDate, idx);
+      }
+      start = start.add(1, "days");
+    }
+    return [];
+
+    for (let i = 1; i < stockByPrice.length; i++) {
+      const currentPrice = stockByPrice[i];
+      const beforePrice = stockByPrice[i - 1];
 
       if (currentPrice.date < formStr || currentPrice.date > endStr) {
         continue;
@@ -175,7 +209,7 @@ class VbsBacktest {
    * @param condition 조건
    * @param resultAcc 매매 이력
    */
-  private async makeReport(condition: VbsCondition, resultAcc: VbsStockPrice[]) {
+  private async makeReport(condition: VbsCondition, resultAcc: VbsStockPrice[]): Promise<Summary> {
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("종목");
     worksheet.columns = [
@@ -237,8 +271,10 @@ class VbsBacktest {
     const mddResult = [null, "MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
     const cagrResult = [null, "CAGR", Math.round(cagr * 100 * 100) / 100 + "%"];
 
+    const stockBundleName = condition.stockList.map((p) => `${p.name}(${p.code})`).join("_");
+
     worksheet.addRow([]);
-    worksheet.addRow([null, `----- ${condition.stock.name}(${condition.stock.code}) -----`]);
+    worksheet.addRow([null, `----- ${stockBundleName} -----`]);
     worksheet.addRow(gainResult);
     worksheet.addRow(mddResult);
     worksheet.addRow(cagrResult);
@@ -264,7 +300,7 @@ class VbsBacktest {
 
     worksheet.addRow([null, `----- 조건 -----`]);
     worksheet.addRow([null, "기간", `${resultAcc[0].date} ~ ${resultAcc[resultAcc.length - 1].date}`]);
-    worksheet.addRow([null, "대상종목", `${condition.stock.name}(${condition.stock.code})`]);
+    worksheet.addRow([null, "대상종목", `${stockBundleName})`]);
     worksheet.addRow([null, "시작현금", `${CommonUtil.toComma(condition.cash)}원`]);
     worksheet.addRow([null, "투자비율", `${condition.investRatio * 100}%`]);
     worksheet.addRow([null, "수수료", `${condition.feeRate * 100}%`]);
@@ -312,7 +348,7 @@ class VbsBacktest {
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     CommonUtil.applyAutoColumnWith(worksheet);
 
-    const pattern = ` ${condition.stock.name}_${resultAcc[0].date}-${resultAcc[resultAcc.length - 1].date}`;
+    const pattern = ` ${stockBundleName}_${resultAcc[0].date}-${resultAcc[resultAcc.length - 1].date}`;
     await workbook.xlsx.writeFile(CommonUtil.replaceAll(Config.report.file.vbsBacktest, "{pattern}", pattern));
 
     const summary: Summary = {
@@ -364,7 +400,7 @@ type VbsStockPrice = {
 type VbsCondition = {
   // 변동성 비율
   k: number;
-  stock: StockItem[];
+  stockList: StockItem[];
   cash: number;
   feeRate: number;
   investRatio: number;
@@ -388,6 +424,13 @@ type Summary = {
   };
   resultHistory: VbsStockPrice[];
   condtion?: VbsCondition;
+};
+
+type StockCodeByPrice = {
+  stock: StockItem;
+  price: VbsStockPrice[];
+  // 날짜(yyyyMMdd) 기준, 해당 값을 담고 있는 인덱스 번호
+  priceByDateIndex: { [key: string]: number };
 };
 
 const targetStock: StockItem[] = [
@@ -441,7 +484,7 @@ const targetStock: StockItem[] = [
 
 async function baktest() {
   const baseCondition: VbsCondition = {
-    stocks: targetStock,
+    stockList: targetStock,
     cash: 10_000_000,
     feeRate: 0.0002,
     investRatio: 0.99,
@@ -472,7 +515,7 @@ async function baktest() {
     // { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
     // { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
     // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
-    { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
+    // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
     { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
     // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
   ];
@@ -484,11 +527,11 @@ async function baktest() {
     baseCondition.end = range.end;
 
     const summary = await backtest.backtest(baseCondition);
-    summary.condtion = _.cloneDeep(baseCondition);
-    summaryList.push(summary);
+    // summary.condtion = _.cloneDeep(baseCondition);
+    // summaryList.push(summary);
   }
 
-  await makeReportSummary(summaryList);
+  // await makeReportSummary(summaryList);
 }
 /**
  * 요약 엑셀 리포트
@@ -517,9 +560,10 @@ async function makeReportSummary(summaryList: Summary[]) {
 
   for (const summary of summaryList) {
     const condition = summary.condtion;
+    const stockBundleName = condition.stockList.map((p) => `${p.name}(${p.code})`).join("_");
     const row = {
       rnage: `${summary.resultHistory[0].date} ~ ${summary.resultHistory[summary.resultHistory.length - 1].date}`,
-      market: `${condition.stock.name}(${condition.stock.code})`,
+      market: `${stockBundleName}`,
       cash: condition.cash,
       investRatio: condition.investRatio,
       feeRate: condition.feeRate,

@@ -23,7 +23,7 @@ class TargetMarketPriceCrawlerToCsv {
       await CommonUtil.delay(delayTime);
 
       const a = csvWriter.createObjectCsvWriter({
-        path: `${Config.crawling.dir.csvPrice}/${stockItem.code}_${stockItem.name}`,
+        path: `${Config.crawling.dir.csvPrice}/${stockItem.code}_${stockItem.name}.csv`,
         header: [
           { id: "date", title: "date" },
           { id: "value", title: "value" },
