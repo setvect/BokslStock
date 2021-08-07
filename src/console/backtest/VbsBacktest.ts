@@ -3,7 +3,7 @@ import Config from "@/config/default";
 import CommonUtil from "@/util/common-util";
 import * as _ from "lodash";
 import * as Excel from "exceljs";
-import { StockItem, Trade } from "./BacktestType";
+import { StockItem } from "./BacktestType";
 import CrawlerHttp from "../crawler/CrawlerHttp";
 
 /**
@@ -38,8 +38,8 @@ class VbsBacktest {
     const resultAcc = this.analysis(condition, stockByPrice);
 
     // 4.결과 저장(excel)
-    // const summary = await this.makeReport(condition, resultAcc);
-    // return summary;
+    const summary = await this.makeReport(condition, resultAcc);
+    return summary;
   }
 
   /**
@@ -72,136 +72,133 @@ class VbsBacktest {
    * @param codeByPrice 종목별 시세 데이터
    */
   private analysis(condition: VbsCondition, codeByPrice: StockCodeByPrice[]): VbsStockPrice[] {
-    const account = {
+    const account: Account = {
       cash: condition.cash,
-      qty: 0,
-      buyPrice: 0,
-      buyCount: 0,
+      buyStock: _.chain(condition.stockList)
+        .reduce((acc, stock) => {
+          acc[stock.code] = {
+            qty: 0,
+            buyPrice: 0,
+          };
+          return acc;
+        }, {})
+        .value(),
     };
 
     let start = moment(condition.start);
     const end = moment(condition.end);
-    const formStr = moment(condition.start).format("YYYYMMDD");
-    const endStr = moment(condition.end).format("YYYYMMDD");
     const resultAcc: VbsStockPrice[] = [];
-    const codes = codeByPrice.map((p) => p.stock.code);
-    const stockByPrice = codeByPrice[codes[0]];
-    const stockCount = codes.length;
-
-    console.log("start <= end :>> ", start <= end);
-    for (const code of codes) {
-      const priceList = codeByPrice[code];
-    }
 
     while (start <= end) {
       const currentDate = moment(start).format("YYYYMMDD");
-      for (const price of codeByPrice) {
-        const idx = price.priceByDateIndex[currentDate];
-        console.log(price.stock.name, currentDate, idx);
-      }
-      start = start.add(1, "days");
-    }
-    return [];
+      for (const stockByPrice of codeByPrice) {
+        const idx = stockByPrice.priceByDateIndex[currentDate];
+        if (!idx) {
+          continue;
+        }
 
-    for (let i = 1; i < stockByPrice.length; i++) {
-      const currentPrice = stockByPrice[i];
-      const beforePrice = stockByPrice[i - 1];
+        const currentPrice = stockByPrice.price[idx];
+        const beforePrice = stockByPrice.price[idx - 1];
+        // 목표가
+        // 오늘 시가 + (전날 고가 - 전날 저가) * 변동성 비율
+        const targetPrice = currentPrice.open + (beforePrice.high - beforePrice.low) * condition.k;
+        const stockCode = stockByPrice.stock.code;
 
-      if (currentPrice.date < formStr || currentPrice.date > endStr) {
-        continue;
-      }
+        const buyStock = account.buyStock[stockCode];
 
-      // 목표가
-      // 오늘 시가 + (전날 고가 - 전날 저가) * 변동성 비율
-      const targetPrice = currentPrice.open + (beforePrice.high - beforePrice.low) * condition.k;
-      let isTrade = false;
+        // 매도 체크(전날 매수를 했을 경우)
+        if (buyStock.qty !== 0) {
+          // 그날 시가 매도
+          const fee = Math.floor(currentPrice.open * buyStock.qty * condition.feeRate);
+          const gain = CommonUtil.getYield(currentPrice.open, buyStock.buyPrice);
 
-      // 매도 체크(전날 매수를 했을 경우)
-      if (account.qty !== 0) {
-        // 그날 시가 매도
-        const fee = Math.floor(currentPrice.open * account.qty * condition.feeRate);
-        const gain = CommonUtil.getYield(currentPrice.open, account.buyPrice);
+          const gainPrice = buyStock.qty * currentPrice.open - buyStock.qty * buyStock.buyPrice;
 
-        const gainPrice = account.qty * currentPrice.open - account.qty * account.buyPrice;
+          account.cash = account.cash + currentPrice.open * buyStock.qty - fee;
+          buyStock.qty = 0;
+          buyStock.buyPrice = 0;
 
-        account.cash = account.cash + currentPrice.open * account.qty - fee;
-        account.qty = 0;
-        account.buyPrice = 0;
+          const stockPrice = _.cloneDeep(currentPrice);
+          stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+          stockPrice.targetPrice = 0;
 
-        const stockPrice = _.cloneDeep(currentPrice);
-        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
-        stockPrice.targetPrice = 0;
+          const totalBuyPrice: number = this.getTotalBuyPrice(account);
 
-        stockPrice.trade = {
-          action: "SELL",
-          cash: account.cash,
-          fee,
-          qty: account.qty,
-          buyPrice: account.buyPrice,
-          sellPrice: currentPrice.open,
-          gain,
-          gainPrice: gainPrice,
-          total: account.cash + account.qty * account.buyPrice,
-        };
-        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
-        resultAcc.push(stockPrice);
-        resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].open, resultAcc[0].open);
-        isTrade = true;
-      }
-
-      // 매수 체크
-      if (account.qty === 0) {
-        const stockPrice = _.cloneDeep(currentPrice);
-        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
-        stockPrice.targetPrice = targetPrice;
-        stockPrice.targetPriceFormula = `${currentPrice.open} + (${beforePrice.high} - ${beforePrice.low}) * ${condition.k}`;
-
-        if (currentPrice.high > stockPrice.targetPrice) {
-          // 정해진 목표가 매수
-          account.buyPrice = stockPrice.targetPrice;
-          account.qty = Math.floor((account.cash * condition.investRatio) / account.buyPrice);
-          const fee = Math.floor(account.buyPrice * account.qty * condition.feeRate);
-          account.cash = account.cash - account.buyPrice * account.qty - fee;
           stockPrice.trade = {
-            action: "BUY",
+            action: "SELL",
             cash: account.cash,
+            stock: stockByPrice.stock,
             fee,
-            qty: account.qty,
-            buyPrice: account.buyPrice,
-            sellPrice: 0,
-            gain: 0,
-            gainPrice: 0,
-            total: account.cash + account.qty * account.buyPrice,
+            qty: buyStock.qty,
+            buyPrice: buyStock.buyPrice,
+            sellPrice: currentPrice.open,
+            gain,
+            gainPrice: gainPrice,
+            total: account.cash + totalBuyPrice,
           };
           stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
           resultAcc.push(stockPrice);
-          resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
-          isTrade = true;
+          resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].open, resultAcc[0].open);
+        }
+
+        // 매수 체크
+        if (buyStock.qty === 0) {
+          const stockPrice = _.cloneDeep(currentPrice);
+          stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+          stockPrice.targetPrice = targetPrice;
+          stockPrice.targetPriceFormula = `${currentPrice.open} + (${beforePrice.high} - ${beforePrice.low}) * ${condition.k}`;
+
+          if (currentPrice.high > stockPrice.targetPrice) {
+            // 정해진 목표가 매수
+            buyStock.buyPrice = stockPrice.targetPrice;
+            buyStock.qty = Math.floor((account.cash * condition.investRatio * this.getBuyRate(account)) / buyStock.buyPrice);
+            const totalBuyPrice: number = this.getTotalBuyPrice(account);
+            const fee = Math.floor(buyStock.buyPrice * buyStock.qty * condition.feeRate);
+            account.cash = account.cash - buyStock.buyPrice * buyStock.qty - fee;
+            stockPrice.trade = {
+              action: "BUY",
+              cash: account.cash,
+              stock: stockByPrice.stock,
+              fee,
+              qty: buyStock.qty,
+              buyPrice: buyStock.buyPrice,
+              sellPrice: 0,
+              gain: 0,
+              gainPrice: 0,
+              total: account.cash + totalBuyPrice,
+            };
+            stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
+            resultAcc.push(stockPrice);
+            resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
+          }
         }
       }
-
-      if (!isTrade) {
-        const stockPrice = _.cloneDeep(currentPrice);
-        stockPrice.targetPrice = targetPrice;
-        stockPrice.targetPriceFormula = `${currentPrice.open} + (${beforePrice.high} - ${beforePrice.low}) * ${condition.k}`;
-
-        stockPrice.trade = {
-          action: "-",
-          cash: account.cash,
-          fee: 0,
-          qty: account.qty,
-          buyPrice: account.buyPrice,
-          sellPrice: 0,
-          gain: 0,
-          gainPrice: 0,
-          total: account.cash + account.qty * currentPrice.close,
-        };
-        resultAcc.push(stockPrice);
-        resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
-        stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
-      }
+      start = start.add(1, "days");
     }
     return resultAcc;
+  }
+
+  /**
+   * 매수 가격 구함
+   * @param account
+   */
+  private getTotalBuyPrice(account: Account): number {
+    return _.chain(Object.keys(account.buyStock))
+      .map((p) => account.buyStock[p].buyPrice * account.buyStock[p].qty)
+      .sum()
+      .value();
+  }
+
+  /**
+   * 매수 비율
+   * 예를 들어 매수 대상 종목이 5개이고 현재 2개 종목을 매수 하였다면
+   * 다음 종목 매수 금액은 현재 가지고 있는 현금에서 3/5 만큼 매수한다.
+   * @param account
+   */
+  private getBuyRate(account: Account): number {
+    const keys = Object.keys(account.buyStock);
+    const buyCount = keys.filter((p) => account.buyStock[p].qty > 0).length;
+    return buyCount / keys.length;
   }
 
   /**
@@ -397,6 +394,28 @@ type VbsStockPrice = {
   trade?: Trade;
 };
 
+type Trade = {
+  qty?: number;
+  // 매수단가
+  buyPrice?: number;
+  // 매도단가
+  sellPrice?: number;
+  // 거래 종목
+  stock?: StockItem;
+  // 거래 수수료
+  fee?: number;
+  cash?: number;
+  // 수익률
+  gain?: number;
+  // 수익금
+  gainPrice?: number;
+  total?: number;
+  // 전체 수익금
+  totalGain?: number;
+  // 매수, 매도, 매매 하지 않음
+  action?: "BUY" | "SELL" | "-";
+};
+
 type VbsCondition = {
   // 변동성 비율
   k: number;
@@ -431,6 +450,20 @@ type StockCodeByPrice = {
   price: VbsStockPrice[];
   // 날짜(yyyyMMdd) 기준, 해당 값을 담고 있는 인덱스 번호
   priceByDateIndex: { [key: string]: number };
+};
+
+/**
+ * 매수 정보
+ */
+type Account = {
+  cash: number;
+  buyStock: {
+    // Key: 종목 코드
+    [key: string]: {
+      qty: number;
+      buyPrice: number;
+    };
+  };
 };
 
 const targetStock: StockItem[] = [
@@ -527,11 +560,11 @@ async function baktest() {
     baseCondition.end = range.end;
 
     const summary = await backtest.backtest(baseCondition);
-    // summary.condtion = _.cloneDeep(baseCondition);
-    // summaryList.push(summary);
+    summary.condtion = _.cloneDeep(baseCondition);
+    summaryList.push(summary);
   }
 
-  // await makeReportSummary(summaryList);
+  await makeReportSummary(summaryList);
 }
 /**
  * 요약 엑셀 리포트
