@@ -143,6 +143,30 @@ export default class CommonUtil {
   }
 
   /**
+   * 기하평균
+   * @param values 양수값
+   */
+  static getGmean(values: number[]) {
+    const multipluValue = values.reduce((acc, value) => {
+      acc = acc * value;
+      return acc;
+    }, 1);
+    return Math.pow(multipluValue, 1 / values.length);
+  }
+
+  /**
+   * 합산 수익률
+   * @param values 양수값
+   */
+  static getCombiedYield(values: number[]) {
+    const yieldValue = values.reduce((acc, value) => {
+      acc = acc * (1 + value);
+      return acc;
+    }, 1);
+    return yieldValue - 1;
+  }
+
+  /**
    *
    * @param value 백분률 표시할 값
    * @param point 소수점 자리

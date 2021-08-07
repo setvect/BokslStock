@@ -35,10 +35,10 @@ class VbsBacktest {
       .value();
 
     // 3. 분석
-    const resultAcc = this.analysis(condition, stockByPrice);
+    const [resultAcc, stockStartEndPrice] = this.analysis(condition, stockByPrice);
 
     // 4.결과 저장(excel)
-    const summary = await this.makeReport(condition, resultAcc);
+    const summary = await this.makeReport(condition, resultAcc, stockStartEndPrice);
     return summary;
   }
 
@@ -71,7 +71,7 @@ class VbsBacktest {
    * @param condition 조건
    * @param codeByPrice 종목별 시세 데이터
    */
-  private analysis(condition: VbsCondition, codeByPrice: StockCodeByPrice[]): VbsStockPrice[] {
+  private analysis(condition: VbsCondition, codeByPrice: StockCodeByPrice[]): [VbsStockPrice[], StockStartEndPrice] {
     const account: Account = {
       cash: condition.cash,
       buyStock: _.chain(condition.stockList)
@@ -88,6 +88,7 @@ class VbsBacktest {
     let start = moment(condition.start);
     const end = moment(condition.end);
     const resultAcc: VbsStockPrice[] = [];
+    const stockByStartEndPrice: StockStartEndPrice = {};
 
     while (start <= end) {
       const currentDate = moment(start).format("YYYYMMDD");
@@ -95,6 +96,16 @@ class VbsBacktest {
         const idx = stockByPrice.priceByDateIndex[currentDate];
         if (!idx) {
           continue;
+        }
+        const startEnd = stockByStartEndPrice[stockByPrice.stock.code];
+        // 각 종목마다 시작가격 등록
+        if (!startEnd) {
+          stockByStartEndPrice[stockByPrice.stock.code] = {
+            stock: stockByPrice.stock,
+            startPrice: stockByPrice.price[idx].open,
+          };
+        } else {
+          stockByStartEndPrice[stockByPrice.stock.code].endPrice = stockByPrice.price[idx].close;
         }
 
         const currentPrice = stockByPrice.price[idx];
@@ -152,6 +163,7 @@ class VbsBacktest {
             // 정해진 목표가 매수
             buyStock.buyPrice = stockPrice.targetPrice;
             buyStock.qty = Math.floor((account.cash * condition.investRatio * this.getBuyRate(account)) / buyStock.buyPrice);
+
             const totalBuyPrice: number = this.getTotalBuyPrice(account);
             const fee = Math.floor(buyStock.buyPrice * buyStock.qty * condition.feeRate);
             account.cash = account.cash - buyStock.buyPrice * buyStock.qty - fee;
@@ -175,7 +187,7 @@ class VbsBacktest {
       }
       start = start.add(1, "days");
     }
-    return resultAcc;
+    return [resultAcc, stockByStartEndPrice];
   }
 
   /**
@@ -198,25 +210,25 @@ class VbsBacktest {
   private getBuyRate(account: Account): number {
     const keys = Object.keys(account.buyStock);
     const buyCount = keys.filter((p) => account.buyStock[p].qty > 0).length;
-    return buyCount / keys.length;
+    return (buyCount + 1) / keys.length;
   }
 
   /**
    * 엑레 리포트 만듦
    * @param condition 조건
    * @param resultAcc 매매 이력
+   * @param stockByStartEndPrice 각 종목별 시작, 종료 가격 정보
    */
-  private async makeReport(condition: VbsCondition, resultAcc: VbsStockPrice[]): Promise<Summary> {
+  private async makeReport(condition: VbsCondition, resultAcc: VbsStockPrice[], stockByStartEndPrice: StockStartEndPrice): Promise<Summary> {
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet("종목");
     worksheet.columns = [
       { header: "날짜", key: "date" },
+      { header: "종목", key: "stock" },
       { header: "시가", key: "open", style: { numFmt: "###,###" } },
       { header: "고가", key: "high", style: { numFmt: "###,###" } },
       { header: "저가", key: "low", style: { numFmt: "###,###" } },
       { header: "종가", key: "close", style: { numFmt: "###,###" } },
-      { header: "주가 수익률(종가 기준)", key: "gain", style: { numFmt: "0.00%" } },
-      { header: "주가 수익비(종가 기준)", key: "gain_rate", style: { numFmt: "###,###.00" } },
       { header: "목표가 계산식", key: "target_price_formula", style: { numFmt: "###,###" } },
       { header: "목표가", key: "target_price", style: { numFmt: "###,###" } },
       { header: "매매여부", key: "action", style: { alignment: { horizontal: "center" } } },
@@ -235,12 +247,11 @@ class VbsBacktest {
     for (const marketPrice of resultAcc) {
       const row = {
         date: marketPrice["date"],
+        stock: `${marketPrice.trade.stock.name}(${marketPrice.trade.stock.code})`,
         open: marketPrice["open"],
         high: marketPrice["high"],
         low: marketPrice["low"],
         close: marketPrice["close"],
-        gain: marketPrice["gain"],
-        gain_rate: 1 + marketPrice["gain"],
         target_price_formula: marketPrice.targetPriceFormula,
         target_price: marketPrice.targetPrice,
         action: marketPrice.trade.action,
@@ -258,23 +269,30 @@ class VbsBacktest {
       worksheet.addRow(row);
     }
 
-    const diffDays = moment(resultAcc[resultAcc.length - 1].date).diff(moment(resultAcc[0].date), "days");
-    console.log("resultAcc.length :>> ", resultAcc.length);
-    const gain = resultAcc[resultAcc.length - 1].gain;
-    const mdd = CommonUtil.getMdd(resultAcc.map((p) => p.close));
-    const cagr = CommonUtil.getCagr(1, gain + 1, diffDays);
-
-    const gainResult = [null, "수익률", Math.round(gain * 100 * 100) / 100 + "%"];
-    const mddResult = [null, "MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
-    const cagrResult = [null, "CAGR", Math.round(cagr * 100 * 100) / 100 + "%"];
-
-    const stockBundleName = condition.stockList.map((p) => `${p.name}(${p.code})`).join("_");
+    const diffDays = moment(condition.end).diff(condition.start, "days");
 
     worksheet.addRow([]);
-    worksheet.addRow([null, `----- ${stockBundleName} -----`]);
-    worksheet.addRow(gainResult);
-    worksheet.addRow(mddResult);
-    worksheet.addRow(cagrResult);
+    worksheet.addRow([null, `----- 기준 주가 -----`]);
+
+    const stockGain = [];
+
+    for (const key in stockByStartEndPrice) {
+      const stockPrice = stockByStartEndPrice[key];
+
+      worksheet.addRow([null, `: ${stockPrice.stock.name}(${stockPrice.stock.code})`]);
+      const gain = CommonUtil.getYield(stockPrice.endPrice, stockPrice.startPrice);
+      const cagr = CommonUtil.getCagr(1, gain + 1, diffDays);
+      stockGain.push(gain);
+      const gainResult = [null, "수익률", Math.round(gain * 100 * 100) / 100 + "%"];
+      const cagrResult = [null, "CAGR", Math.round(cagr * 100 * 100) / 100 + "%"];
+
+      console.log(`--- ${stockPrice.stock.name}(${stockPrice.stock.code})`);
+      console.log(gainResult);
+      console.log(cagrResult);
+
+      worksheet.addRow(gainResult);
+      worksheet.addRow(cagrResult);
+    }
 
     const sGain = resultAcc[resultAcc.length - 1].trade.totalGain;
     const sCagr = CommonUtil.getCagr(1, sGain + 1, diffDays);
@@ -297,16 +315,13 @@ class VbsBacktest {
 
     worksheet.addRow([null, `----- 조건 -----`]);
     worksheet.addRow([null, "기간", `${resultAcc[0].date} ~ ${resultAcc[resultAcc.length - 1].date}`]);
-    worksheet.addRow([null, "대상종목", `${stockBundleName})`]);
     worksheet.addRow([null, "시작현금", `${CommonUtil.toComma(condition.cash)}원`]);
     worksheet.addRow([null, "투자비율", `${condition.investRatio * 100}%`]);
     worksheet.addRow([null, "수수료", `${condition.feeRate * 100}%`]);
     worksheet.addRow([null, "K", `${condition.k}`]);
 
     // 결과 출력
-    console.log(gainResult);
-    console.log(mddResult);
-    console.log(cagrResult);
+    console.log("----- 전략결과 -----");
     console.log(sGainResult);
     console.log(sMddResult);
     console.log(sCagrResult);
@@ -345,14 +360,15 @@ class VbsBacktest {
     worksheet.views = [{ state: "frozen", ySplit: 1 }];
     CommonUtil.applyAutoColumnWith(worksheet);
 
+    const stockBundleName = condition.stockList.map((p) => `${p.name}(${p.code})`).join("_");
     const pattern = ` ${stockBundleName}_${resultAcc[0].date}-${resultAcc[resultAcc.length - 1].date}`;
     await workbook.xlsx.writeFile(CommonUtil.replaceAll(Config.report.file.vbsBacktest, "{pattern}", pattern));
 
+    const gGain = _.mean(stockGain);
     const summary: Summary = {
       market: {
-        gain: gain,
-        mdd: mdd,
-        cagr: cagr,
+        gain: gGain,
+        cagr: CommonUtil.getCagr(1, gGain + 1, diffDays),
       },
       strategy: {
         gain: sGain,
@@ -431,7 +447,6 @@ type VbsCondition = {
 type Summary = {
   market: {
     gain: number;
-    mdd: number;
     cagr: number;
   };
   strategy: {
@@ -466,19 +481,31 @@ type Account = {
   };
 };
 
+type StockStartEndPrice = {
+  [key: string]: {
+    stock: StockItem;
+    startPrice: number;
+    endPrice?: number;
+  };
+};
+
 const targetStock: StockItem[] = [
+  // start 2003.02
   // {
   //   code: "069500",
   //   name: "KODEX 200",
   // },
+  // start 2010.03
   {
     code: "122630",
     name: "KODEX 레버리지",
   },
+  // start 2015.11
   // {
   //   code: "229200",
   //   name: "KODEX 코스닥 150",
   // },
+  // start 2016.01
   {
     code: "233740",
     name: "KODEX 코스닥150 레버리지",
@@ -545,11 +572,12 @@ async function baktest() {
     // { start: new Date(2013, 1 - 1, 1), end: new Date(2013, 12 - 1, 31) },
     // { start: new Date(2014, 1 - 1, 1), end: new Date(2014, 12 - 1, 31) },
     // { start: new Date(2015, 1 - 1, 1), end: new Date(2015, 12 - 1, 31) },
+    { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
     // { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
     // { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
     // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
     // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
-    { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
+    // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
     // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
   ];
 
@@ -603,7 +631,8 @@ async function makeReportSummary(summaryList: Summary[]) {
       k: condition.k,
       comment: condition.comment || "",
       marketGain: summary.market.gain,
-      marketMdd: summary.market.mdd,
+      // TODO
+      marketMdd: 0,
       marketCagr: summary.market.cagr,
       strategyGain: summary.strategy.gain,
       strategyMdd: summary.strategy.mdd,
