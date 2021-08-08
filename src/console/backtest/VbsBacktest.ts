@@ -7,7 +7,7 @@ import { StockItem } from "./BacktestType";
 import CrawlerHttp from "../crawler/CrawlerHttp";
 
 /**
- * RSI 백테스트
+ * 변동성 돌파전략 백테스트
  */
 class VbsBacktest {
   async backtest(condition: VbsCondition) {
@@ -21,9 +21,19 @@ class VbsBacktest {
         // 2. 데이터 가공
         const marketPriceList: VbsStockPrice[] = this.makeVbsStockPrice(priceObject);
         const dateByIndex = {};
+
+        const closePrice = marketPriceList.map((p) => p.close);
         for (let i = 0; i < marketPriceList.length; i++) {
           dateByIndex[marketPriceList[i].date] = i;
+          // 각 주가의 이동평균 구하기
+          for (const maSize of condition.ma) {
+            if (i >= maSize - 1) {
+              const priceHistory = closePrice.slice(i - (maSize - 1), i + 1);
+              marketPriceList[i].ma[maSize + ""] = _.mean(priceHistory);
+            }
+          }
         }
+
         const acc = await promise.then();
         acc.push({
           stock: stock,
@@ -59,7 +69,9 @@ class VbsBacktest {
           gain: CommonUtil.getYield(p[4], initClosePrice),
           targetPrice: Number.MAX_VALUE,
           targetPriceFormula: "",
+          isMaUpper: false,
           trade: {},
+          ma: {},
         };
       },
     );
@@ -143,6 +155,16 @@ class VbsBacktest {
 
         const buyStock = account.buyStock[stockCode];
 
+        // 전날 이동평균이 전날 종가보다 위에 있는지 체크
+        currentPrice.isMaUpper = true;
+        for (const maDay of condition.ma) {
+          // console.log(`${currentDate} ${stockByPrice.stock.name}[${maDay}] ${beforePrice.ma[maDay]}:${beforePrice.close}`);
+          if (beforePrice.ma[maDay] > beforePrice.close) {
+            currentPrice.isMaUpper = false;
+            break;
+          }
+        }
+
         // 매도 체크(전날 매수를 했을 경우)
         if (buyStock.qty !== 0) {
           // 그날 시가 매도
@@ -188,7 +210,10 @@ class VbsBacktest {
           stockPrice.targetPrice = targetPrice;
           stockPrice.targetPriceFormula = `${currentPrice.open} + (${beforePrice.high} - ${beforePrice.low}) * ${condition.k}`;
 
-          if (currentPrice.high > stockPrice.targetPrice) {
+          // 변동성 돌파 여부
+          const isVb = currentPrice.high > stockPrice.targetPrice;
+
+          if (isVb && currentPrice.isMaUpper) {
             // 정해진 목표가 매수
             buyStock.buyPrice = stockPrice.targetPrice;
             buyStock.qty = Math.floor((account.cash * condition.investRatio * this.getBuyRate(account)) / buyStock.buyPrice);
@@ -229,6 +254,7 @@ class VbsBacktest {
           gain: 0,
           targetPrice: 0,
           targetPriceFormula: "",
+          isMaUpper: null,
           trade: {
             weightGain: meanGain,
             weightRate: 1 + meanGain,
@@ -298,6 +324,7 @@ class VbsBacktest {
       { header: "동일비중 수익률", key: "weight_gain", style: { numFmt: "0.00%" } },
       { header: "동일비중 수익비", key: "weight_rate", style: { numFmt: "###,###.00" } },
       { header: "목표가 계산식", key: "target_price_formula", style: { numFmt: "###,###" } },
+      { header: "이동평균 돌파 여부", key: "ma_vb" },
       { header: "목표가", key: "target_price", style: { numFmt: "###,###" } },
       { header: "매매여부", key: "action", style: { alignment: { horizontal: "center" } } },
       { header: "수량", key: "trade_qty", style: { numFmt: "###,###" } },
@@ -323,6 +350,7 @@ class VbsBacktest {
         weight_gain: marketPrice.trade.weightGain,
         weight_rate: marketPrice.trade.weightRate,
         target_price_formula: marketPrice.targetPriceFormula,
+        ma_vb: marketPrice.isMaUpper,
         target_price: marketPrice.targetPrice,
         action: marketPrice.trade.action,
         trade_qty: marketPrice.trade.qty,
@@ -405,6 +433,7 @@ class VbsBacktest {
     worksheet.addRow([null, "투자비율", `${condition.investRatio * 100}%`]);
     worksheet.addRow([null, "수수료", `${condition.feeRate * 100}%`]);
     worksheet.addRow([null, "K", `${condition.k}`]);
+    worksheet.addRow([null, "이동평균", `${condition.ma}`]);
 
     // 결과 출력
     console.log("----- 전략결과 -----");
@@ -494,6 +523,9 @@ type VbsStockPrice = {
   targetPrice: number;
   // 목표가 계산식
   targetPriceFormula: string;
+  // 이동평균 돌파 여부
+  isMaUpper: boolean;
+  ma?: { [key: string]: number };
   trade?: Trade;
 };
 
@@ -532,6 +564,9 @@ type VbsCondition = {
   investRatio: number;
   start: Date;
   end: Date;
+  // 이동평균
+  // 현재가가 해당 이동평균(들)보다 높아야 매수
+  ma: number[];
   comment?: string;
 };
 
@@ -646,7 +681,8 @@ async function baktest() {
     investRatio: 0.99,
     start: new Date(2002, 1, 1),
     end: new Date(2021, 6, 31),
-    k: 0.5,
+    ma: [5],
+    k: 0.3,
   };
 
   const rangeList = [
@@ -668,27 +704,24 @@ async function baktest() {
     // { start: new Date(2013, 1 - 1, 1), end: new Date(2013, 12 - 1, 31) },
     // { start: new Date(2014, 1 - 1, 1), end: new Date(2014, 12 - 1, 31) },
     // { start: new Date(2015, 1 - 1, 1), end: new Date(2015, 12 - 1, 31) },
-    { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
-    // { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
-    // { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
-    // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
-    // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
-    // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
-    // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
+    // { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
+    { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
+    { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
+    { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
+    { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
+    { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
+    { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
   ];
 
   const backtest = new VbsBacktest();
   const summaryList: Summary[] = [];
   for (const range of rangeList) {
-    for (let k = 0.1; k < 1; k += 0.1) {
-      baseCondition.start = range.start;
-      baseCondition.end = range.end;
-      baseCondition.k = k;
+    baseCondition.start = range.start;
+    baseCondition.end = range.end;
 
-      const summary = await backtest.backtest(baseCondition);
-      summary.condtion = _.cloneDeep(baseCondition);
-      summaryList.push(summary);
-    }
+    const summary = await backtest.backtest(baseCondition);
+    summary.condtion = _.cloneDeep(baseCondition);
+    summaryList.push(summary);
   }
 
   await makeReportSummary(summaryList);
@@ -707,6 +740,7 @@ async function makeReportSummary(summaryList: Summary[]) {
     { header: "투자비율", key: "investRatio", style: { numFmt: "0.00%" } },
     { header: "수수료", key: "feeRate", style: { numFmt: "0.000%" } },
     { header: "K", key: "k", style: { numFmt: "0.0" } },
+    { header: "이동평균", key: "ma" },
     { header: "조건 설명", key: "comment" },
     { header: "종목 수익률", key: "marketGain", style: { numFmt: "0.00%" } },
     { header: "종목 MDD", key: "marketMdd", style: { numFmt: "0.00%" } },
@@ -728,6 +762,7 @@ async function makeReportSummary(summaryList: Summary[]) {
       investRatio: condition.investRatio,
       feeRate: condition.feeRate,
       k: condition.k,
+      ma: condition.ma,
       comment: condition.comment || "",
       marketGain: summary.market.gain,
       // TODO
@@ -745,9 +780,9 @@ async function makeReportSummary(summaryList: Summary[]) {
   worksheet.eachRow((row, rIdx) => {
     row.eachCell((cell, cIdx) => {
       let color = "cccccc";
-      if (8 <= cIdx && cIdx <= 10) {
+      if (9 <= cIdx && cIdx <= 11) {
         color = "00eeee";
-      } else if (11 <= cIdx && cIdx <= 15) {
+      } else if (12 <= cIdx && cIdx <= 16) {
         color = "eeee00";
       }
 
