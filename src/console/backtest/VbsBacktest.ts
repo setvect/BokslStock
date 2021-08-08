@@ -92,21 +92,47 @@ class VbsBacktest {
 
     while (start <= end) {
       const currentDate = moment(start).format("YYYYMMDD");
+      // 종목별 날짜별 종가 정보 얻기
       for (const stockByPrice of codeByPrice) {
         const idx = stockByPrice.priceByDateIndex[currentDate];
         if (!idx) {
           continue;
         }
-        const startEnd = stockByStartEndPrice[stockByPrice.stock.code];
+        let stockPriceRate = stockByStartEndPrice[stockByPrice.stock.code];
+        const closePrice = stockByPrice.price[idx].close;
         // 각 종목마다 시작가격 등록
-        if (!startEnd) {
+        if (!stockPriceRate) {
           stockByStartEndPrice[stockByPrice.stock.code] = {
             stock: stockByPrice.stock,
             startPrice: stockByPrice.price[idx].open,
+            closePrice: [],
+            rate: [],
           };
-        } else {
-          stockByStartEndPrice[stockByPrice.stock.code].endPrice = stockByPrice.price[idx].close;
         }
+
+        stockPriceRate = stockByStartEndPrice[stockByPrice.stock.code];
+        stockPriceRate.closePrice.push(closePrice);
+        // 최초 시가와 비교하여 수익률을 계산
+        stockPriceRate.rate.push(CommonUtil.getYield(closePrice, stockPriceRate.startPrice));
+      }
+
+      // 동일비중 평균 수익률
+      const meanGain = _.chain(Object.keys(stockByStartEndPrice))
+        .map((stockCode) => {
+          return stockByStartEndPrice[stockCode].rate[stockByStartEndPrice[stockCode].rate.length - 1];
+        })
+        .mean()
+        .value();
+
+      let isTrade = false;
+      let isOpenMarket = false;
+
+      for (const stockByPrice of codeByPrice) {
+        const idx = stockByPrice.priceByDateIndex[currentDate];
+        if (!idx) {
+          continue;
+        }
+        isOpenMarket = true;
 
         const currentPrice = stockByPrice.price[idx];
         const beforePrice = stockByPrice.price[idx - 1];
@@ -136,6 +162,8 @@ class VbsBacktest {
           const totalBuyPrice: number = this.getTotalBuyPrice(account);
 
           stockPrice.trade = {
+            weightGain: meanGain,
+            weightRate: 1 + meanGain,
             action: "SELL",
             cash: account.cash,
             stock: stockByPrice.stock,
@@ -150,6 +178,7 @@ class VbsBacktest {
           stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
           resultAcc.push(stockPrice);
           resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].open, resultAcc[0].open);
+          isTrade = true;
         }
 
         // 매수 체크
@@ -168,6 +197,8 @@ class VbsBacktest {
             const fee = Math.floor(buyStock.buyPrice * buyStock.qty * condition.feeRate);
             account.cash = account.cash - buyStock.buyPrice * buyStock.qty - fee;
             stockPrice.trade = {
+              weightGain: meanGain,
+              weightRate: 1 + meanGain,
               action: "BUY",
               cash: account.cash,
               stock: stockByPrice.stock,
@@ -182,9 +213,44 @@ class VbsBacktest {
             stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
             resultAcc.push(stockPrice);
             resultAcc[resultAcc.length - 1].gain = CommonUtil.getYield(resultAcc[resultAcc.length - 1].close, resultAcc[0].close);
+            isTrade = true;
           }
         }
       }
+
+      // 해당 날짜에 매수/매도가 없는 경우 동일가중 정보를 채워 준다
+      if (!isTrade && isOpenMarket) {
+        const currentPrice: VbsStockPrice = {
+          date: currentDate,
+          open: 0,
+          high: 0,
+          low: 0,
+          close: 0,
+          gain: 0,
+          targetPrice: 0,
+          targetPriceFormula: "",
+          trade: {
+            weightGain: meanGain,
+            weightRate: 1 + meanGain,
+            action: "BUY",
+            cash: account.cash,
+            stock: {
+              code: "",
+              name: "동일가중",
+            },
+            fee: 0,
+            qty: 0,
+            buyPrice: 0,
+            sellPrice: 0,
+            gain: 0,
+            gainPrice: 0,
+            total: account.cash,
+            totalGain: CommonUtil.getYield(account.cash, condition.cash),
+          },
+        };
+        resultAcc.push(currentPrice);
+      }
+
       start = start.add(1, "days");
     }
     return [resultAcc, stockByStartEndPrice];
@@ -229,6 +295,8 @@ class VbsBacktest {
       { header: "고가", key: "high", style: { numFmt: "###,###" } },
       { header: "저가", key: "low", style: { numFmt: "###,###" } },
       { header: "종가", key: "close", style: { numFmt: "###,###" } },
+      { header: "동일비중 수익률", key: "weight_gain", style: { numFmt: "0.00%" } },
+      { header: "동일비중 수익비", key: "weight_rate", style: { numFmt: "###,###.00" } },
       { header: "목표가 계산식", key: "target_price_formula", style: { numFmt: "###,###" } },
       { header: "목표가", key: "target_price", style: { numFmt: "###,###" } },
       { header: "매매여부", key: "action", style: { alignment: { horizontal: "center" } } },
@@ -252,6 +320,8 @@ class VbsBacktest {
         high: marketPrice["high"],
         low: marketPrice["low"],
         close: marketPrice["close"],
+        weight_gain: marketPrice.trade.weightGain,
+        weight_rate: marketPrice.trade.weightRate,
         target_price_formula: marketPrice.targetPriceFormula,
         target_price: marketPrice.targetPrice,
         action: marketPrice.trade.action,
@@ -272,15 +342,31 @@ class VbsBacktest {
     const diffDays = moment(condition.end).diff(condition.start, "days");
 
     worksheet.addRow([]);
-    worksheet.addRow([null, `----- 기준 주가 -----`]);
+    worksheet.addRow([null, `----- 동일비중 주가 -----`]);
+    const gain = resultAcc[resultAcc.length - 1].trade.weightGain;
+    const mdd = CommonUtil.getMdd(resultAcc.map((p) => p.trade.weightRate));
+    const cagr = CommonUtil.getCagr(1, gain + 1, diffDays);
 
+    const gainResult = [null, "수익률", Math.round(gain * 100 * 100) / 100 + "%"];
+    const mddResult = [null, "MDD", Math.round(mdd * 100 * 100) / 100 + "%"];
+    const cagrResult = [null, "CAGR", Math.round(cagr * 100 * 100) / 100 + "%"];
+
+    console.log(gainResult);
+    console.log(mddResult);
+    console.log(cagrResult);
+
+    worksheet.addRow(gainResult);
+    worksheet.addRow(mddResult);
+    worksheet.addRow(cagrResult);
+
+    worksheet.addRow([null, `----- 기준 주가 -----`]);
     const stockGain = [];
 
     for (const key in stockByStartEndPrice) {
       const stockPrice = stockByStartEndPrice[key];
 
       worksheet.addRow([null, `: ${stockPrice.stock.name}(${stockPrice.stock.code})`]);
-      const gain = CommonUtil.getYield(stockPrice.endPrice, stockPrice.startPrice);
+      const gain = CommonUtil.getYield(stockPrice.closePrice[stockPrice.closePrice.length - 1], stockPrice.startPrice);
       const cagr = CommonUtil.getCagr(1, gain + 1, diffDays);
       stockGain.push(gain);
       const gainResult = [null, "수익률", Math.round(gain * 100 * 100) / 100 + "%"];
@@ -368,6 +454,7 @@ class VbsBacktest {
     const summary: Summary = {
       market: {
         gain: gGain,
+        mdd: mdd,
         cagr: CommonUtil.getCagr(1, gGain + 1, diffDays),
       },
       strategy: {
@@ -411,6 +498,10 @@ type VbsStockPrice = {
 };
 
 type Trade = {
+  // 동일 비중 수익률
+  weightGain?: number;
+  // 동일 비중 수익비
+  weightRate?: number;
   qty?: number;
   // 매수단가
   buyPrice?: number;
@@ -447,6 +538,7 @@ type VbsCondition = {
 type Summary = {
   market: {
     gain: number;
+    mdd: number;
     cagr: number;
   };
   strategy: {
@@ -484,8 +576,12 @@ type Account = {
 type StockStartEndPrice = {
   [key: string]: {
     stock: StockItem;
+    // 해당종목 최초 시가
     startPrice: number;
-    endPrice?: number;
+    // 대상종목 종가
+    closePrice: number[];
+    // 전일과 비교하여 변동률
+    rate: number[];
   };
 };
 
@@ -578,18 +674,21 @@ async function baktest() {
     // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
     // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
     // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
-    // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 12 - 1, 31) },
+    // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
   ];
 
   const backtest = new VbsBacktest();
   const summaryList: Summary[] = [];
   for (const range of rangeList) {
-    baseCondition.start = range.start;
-    baseCondition.end = range.end;
+    for (let k = 0.1; k < 1; k += 0.1) {
+      baseCondition.start = range.start;
+      baseCondition.end = range.end;
+      baseCondition.k = k;
 
-    const summary = await backtest.backtest(baseCondition);
-    summary.condtion = _.cloneDeep(baseCondition);
-    summaryList.push(summary);
+      const summary = await backtest.backtest(baseCondition);
+      summary.condtion = _.cloneDeep(baseCondition);
+      summaryList.push(summary);
+    }
   }
 
   await makeReportSummary(summaryList);
@@ -632,7 +731,7 @@ async function makeReportSummary(summaryList: Summary[]) {
       comment: condition.comment || "",
       marketGain: summary.market.gain,
       // TODO
-      marketMdd: 0,
+      marketMdd: summary.market.mdd,
       marketCagr: summary.market.cagr,
       strategyGain: summary.strategy.gain,
       strategyMdd: summary.strategy.mdd,
