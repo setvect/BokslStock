@@ -681,8 +681,8 @@ async function baktest() {
     investRatio: 0.99,
     start: new Date(2002, 1, 1),
     end: new Date(2021, 6, 31),
-    ma: [5],
-    k: 0.3,
+    ma: [1],
+    k: 0.5,
   };
 
   const rangeList = [
@@ -704,13 +704,13 @@ async function baktest() {
     // { start: new Date(2013, 1 - 1, 1), end: new Date(2013, 12 - 1, 31) },
     // { start: new Date(2014, 1 - 1, 1), end: new Date(2014, 12 - 1, 31) },
     // { start: new Date(2015, 1 - 1, 1), end: new Date(2015, 12 - 1, 31) },
-    // { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
-    { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
-    { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
-    { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
-    { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
-    { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
-    { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
+    { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
+    // { start: new Date(2016, 1 - 1, 1), end: new Date(2016, 12 - 1, 31) },
+    // { start: new Date(2017, 1 - 1, 1), end: new Date(2017, 12 - 1, 31) },
+    // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
+    // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
+    // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
+    // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
   ];
 
   const backtest = new VbsBacktest();

@@ -43,12 +43,12 @@
       "sourceMaps": true,
       "cwd": "${workspaceRoot}",
       "protocol": "inspector"
-    }
+    },
     {
       "type": "node",
       "request": "launch",
-      "name": "test MabsBacktest",
-      "args": ["${workspaceFolder}/src/crawlerConsole/MabsBacktest.ts"],
+      "name": "test Current File",
+      "args": ["${file}"],
       "runtimeArgs": ["--nolazy", "-r", "ts-node/register", "-r", "tsconfig-paths/register", "-r"],
       "sourceMaps": true,
       "cwd": "${workspaceRoot}",
