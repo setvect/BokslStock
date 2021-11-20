@@ -627,10 +627,10 @@ const targetStock: StockItem[] = [
   //   name: "KODEX 200",
   // },
   // start 2010.03
-  {
-    code: "122630",
-    name: "KODEX 레버리지",
-  },
+  // {
+  //   code: "122630",
+  //   name: "KODEX 레버리지",
+  // },
   // start 2015.11
   // {
   //   code: "229200",
