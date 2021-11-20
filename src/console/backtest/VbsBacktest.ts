@@ -737,9 +737,9 @@ async function backtest() {
     // { start: new Date(2018, 1 - 1, 1), end: new Date(2018, 12 - 1, 31) },
     // { start: new Date(2019, 1 - 1, 1), end: new Date(2019, 12 - 1, 31) },
     // { start: new Date(2020, 1 - 1, 1), end: new Date(2020, 12 - 1, 31) },
-    // { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
+    { start: new Date(2021, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
     // { start: new Date(2021, 9 - 1, 1), end: new Date(2021, 11 - 1, 20) },
-    { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 20) },
+    // { start: new Date(2016, 1 - 1, 1), end: new Date(2021, 7 - 1, 31) },
   ];
 
   const backtest = new VbsBacktest();
