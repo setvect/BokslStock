@@ -166,12 +166,11 @@ class VbsBacktest {
           }
         }
 
-        const hasStock = buyStock.qty !== 0;
         // 전일 고가가 오늘 시초가 보다 높은 경우 상승장
         const upMarket = beforePrice.high < currentPrice.open;
         const hold = condition.hold && upMarket;
 
-        if (hasStock) {
+        if (buyStock.qty !== 0) {
           const stockPrice = _.cloneDeep(currentPrice);
           stockPrice.targetPrice = 0;
 
@@ -228,7 +227,7 @@ class VbsBacktest {
         }
 
         // 매수 체크
-        if (!hasStock) {
+        if (buyStock.qty === 0) {
           const stockPrice = _.cloneDeep(currentPrice);
           stockPrice.trade.totalGain = CommonUtil.getYield(stockPrice.trade.total, condition.cash);
           stockPrice.targetPrice = targetPrice;
